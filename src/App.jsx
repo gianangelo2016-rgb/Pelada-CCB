@@ -131,9 +131,27 @@ function teamsEqual(t1, t2) {
   return a.length === b.length && a.every((v, i) => v === b[i]);
 }
 
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(String(reader.result).split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
 function shareCanvas(canvas, filename) {
   canvas.toBlob(async (blob) => {
     if (!blob) return;
+    const cap = window.Capacitor;
+    if (cap && cap.isNativePlatform && cap.isNativePlatform() && cap.Plugins && cap.Plugins.Filesystem && cap.Plugins.Share) {
+      try {
+        const base64 = await blobToBase64(blob);
+        const written = await cap.Plugins.Filesystem.writeFile({ path: filename, data: base64, directory: 'CACHE' });
+        await cap.Plugins.Share.share({ title: filename, url: written.uri });
+        return;
+      } catch (e) { console.error('share nativo falhou', e); }
+    }
     try {
       const file = new File([blob], filename, { type: 'image/png' });
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
