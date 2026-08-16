@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Calendar, Trophy, Check, X, DollarSign, Plus, Trash2, Shield, Target, MessageCircle, ChevronLeft, Loader2, Footprints, Award, Clock, Lock, Unlock, Camera, Shuffle, Star, Crown, KeyRound, Swords, TrendingDown, Medal, Flame, Share2, ArrowUp, Sparkles, CheckCircle2, Zap, Send, ArrowUpCircle, Rocket, Eye, Dumbbell, MapPin, Wind, Crosshair } from 'lucide-react';
+import { Users, Calendar, Trophy, Check, X, DollarSign, Plus, Trash2, Shield, Target, MessageCircle, ChevronLeft, Loader2, Footprints, Award, Clock, Lock, Unlock, Camera, Shuffle, Star, Crown, KeyRound, Swords, TrendingDown, Medal, Flame, Share2, ArrowUp, Sparkles, CheckCircle2, Zap, Send, Rocket, Eye, Dumbbell, MapPin, Wind, Crosshair } from 'lucide-react';
 import { cloudGet, cloudSet, localGet, localSet } from './firebase';
 
 const uid = () => Math.random().toString(36).slice(2, 10);
@@ -22,7 +22,7 @@ const LINHA_ATTRS = [
   { key: 'drible', label: 'Drible', Icon: Footprints },
   { key: 'passe', label: 'Passe', Icon: Send },
   { key: 'fisico', label: 'Físico', Icon: Dumbbell },
-  { key: 'cabeceio', label: 'Cabeceio', Icon: ArrowUpCircle },
+  { key: 'cabeceio', label: 'Cabeceio', Icon: ArrowUp },
   { key: 'chuteLonge', label: 'Chute de longe', Icon: Rocket },
   { key: 'visaoDeJogo', label: 'Visão de jogo', Icon: Eye },
 ];
@@ -31,7 +31,7 @@ const GOLEIRO_ATTRS = [
   { key: 'posicionamento', label: 'Posicionamento', Icon: MapPin },
   { key: 'defesa', label: 'Defesa', Icon: Shield },
   { key: 'agilidade', label: 'Agilidade', Icon: Wind },
-  { key: 'impulsao', label: 'Impulsão', Icon: ArrowUpCircle },
+  { key: 'impulsao', label: 'Impulsão', Icon: ArrowUp },
   { key: 'saidaDeGol', label: 'Saída de gol', Icon: Crosshair },
   { key: 'reposicao', label: 'Reposição', Icon: Send },
 ];
@@ -878,6 +878,44 @@ export default function PeladaApp() {
   const clearIdentity = () => {
     setMyId(null);
     localSet('pelada_my_identity', '');
+  };
+
+  const updateMyPhoto = async (file) => {
+    if (!myId || !file) return;
+    try {
+      const dataUrl = await resizeImage(file);
+      const next = players.map(p => p.id === myId ? { ...p, fotoPendente: dataUrl } : p);
+      await savePlayers(next);
+      setToast('Foto enviada! Aguardando aprovação do organizador.');
+    } catch (e) { setToast('Não foi possível carregar a foto'); }
+  };
+
+  const setPalpite = (gameId, playerId, palpite) => {
+    if (!playerId) return;
+    const next = games.map(g => g.id === gameId ? { ...g, palpites: { ...(g.palpites || {}), [playerId]: palpite } } : g);
+    saveGames(next);
+    setToast('Palpite registrado! Boa sorte 🍀');
+  };
+
+  const voteEnquete = (gameId, voterId, votedId) => {
+    if (!voterId) return;
+    const next = games.map(g => g.id === gameId ? { ...g, enquete: { ...(g.enquete || {}), [voterId]: votedId } } : g);
+    saveGames(next);
+    setToast('Voto registrado! 🥔');
+  };
+
+  const voteMvp = (gameId, voterId, votedId) => {
+    if (!voterId) return;
+    const next = games.map(g => g.id === gameId ? { ...g, votosMvp: { ...(g.votosMvp || {}), [voterId]: votedId } } : g);
+    saveGames(next);
+    setToast('Voto de MVP registrado! 👑');
+  };
+
+  const voteGoleiro = (gameId, voterId, votedId) => {
+    if (!voterId) return;
+    const next = games.map(g => g.id === gameId ? { ...g, votosGoleiro: { ...(g.votosGoleiro || {}), [voterId]: votedId } } : g);
+    saveGames(next);
+    setToast('Voto de melhor goleiro registrado! 🧤');
   };
 
   const guard = (fn) => (...args) => { if (isOrganizer) fn(...args); };
