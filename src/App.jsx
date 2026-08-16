@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Calendar, Trophy, Check, X, DollarSign, Plus, Trash2, Shield, Target, MessageCircle, ChevronLeft, Loader2, Footprints, Award, Clock, Lock, Unlock, Camera, Shuffle, Star, Crown, KeyRound, Swords, TrendingDown, Medal, Flame, Share2, ArrowUp, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Users, Calendar, Trophy, Check, X, DollarSign, Plus, Trash2, Shield, Target, MessageCircle, ChevronLeft, Loader2, Footprints, Award, Clock, Lock, Unlock, Camera, Shuffle, Star, Crown, KeyRound, Swords, TrendingDown, Medal, Flame, Share2, ArrowUp, Sparkles, CheckCircle2, Zap, Send, ArrowUpCircle, Rocket, Eye, Dumbbell, MapPin, Wind, Crosshair } from 'lucide-react';
 import { cloudGet, cloudSet, localGet, localSet } from './firebase';
 
 const uid = () => Math.random().toString(36).slice(2, 10);
@@ -16,18 +16,24 @@ const colorFor = (id) => AVATAR_COLORS[[...id].reduce((a, c) => a + c.charCodeAt
 const POINTS = { gol: 2, assist: 1, defesa: 2, sofrido: -1, penalti: 3, mvp: 3 };
 
 const LINHA_ATTRS = [
-  { key: 'finalizacao', label: 'Finalização' },
-  { key: 'marcacao', label: 'Marcação' },
-  { key: 'velocidade', label: 'Velocidade' },
-  { key: 'drible', label: 'Drible' },
-  { key: 'passe', label: 'Passe' },
+  { key: 'finalizacao', label: 'Finalização', Icon: Target },
+  { key: 'marcacao', label: 'Marcação', Icon: Shield },
+  { key: 'velocidade', label: 'Velocidade', Icon: Zap },
+  { key: 'drible', label: 'Drible', Icon: Footprints },
+  { key: 'passe', label: 'Passe', Icon: Send },
+  { key: 'fisico', label: 'Físico', Icon: Dumbbell },
+  { key: 'cabeceio', label: 'Cabeceio', Icon: ArrowUpCircle },
+  { key: 'chuteLonge', label: 'Chute de longe', Icon: Rocket },
+  { key: 'visaoDeJogo', label: 'Visão de jogo', Icon: Eye },
 ];
 const GOLEIRO_ATTRS = [
-  { key: 'reflexo', label: 'Reflexo' },
-  { key: 'posicionamento', label: 'Posicionamento' },
-  { key: 'defesa', label: 'Defesa' },
-  { key: 'agilidade', label: 'Agilidade' },
-  { key: 'impulsao', label: 'Impulsão' },
+  { key: 'reflexo', label: 'Reflexo', Icon: Zap },
+  { key: 'posicionamento', label: 'Posicionamento', Icon: MapPin },
+  { key: 'defesa', label: 'Defesa', Icon: Shield },
+  { key: 'agilidade', label: 'Agilidade', Icon: Wind },
+  { key: 'impulsao', label: 'Impulsão', Icon: ArrowUpCircle },
+  { key: 'saidaDeGol', label: 'Saída de gol', Icon: Crosshair },
+  { key: 'reposicao', label: 'Reposição', Icon: Send },
 ];
 const attrsFor = (position) => (position === 'goleiro' ? GOLEIRO_ATTRS : LINHA_ATTRS);
 const defaultAttrs = (position) => {
@@ -90,6 +96,248 @@ function computeGamePoints(player, game) {
     + (Number(s.penaltis) || 0) * POINTS.penalti;
   if (game.mvp === player.id) pts += POINTS.mvp;
   return pts;
+}
+
+function resolveBolao(game, players) {
+  if (!game.mvp) return null;
+  const stats = game.stats || {};
+  let maxGols = 0, artilheiros = [];
+  Object.entries(stats).forEach(([pid, s]) => {
+    const g = Number(s.gols) || 0;
+    if (g > maxGols) { maxGols = g; artilheiros = [pid]; }
+    else if (g === maxGols && g > 0) artilheiros.push(pid);
+  });
+  const goleirosConfirmados = players.filter(p => p.position === 'goleiro' && game.rsvp[p.id] === 'sim');
+  let frango = null;
+  if (goleirosConfirmados.length > 1) {
+    let maxSofridos = 0, frangueiros = [];
+    goleirosConfirmados.forEach(gk => {
+      const sof = Number(stats[gk.id]?.sofridos) || 0;
+      if (sof > maxSofridos) { maxSofridos = sof; frangueiros = [gk.id]; }
+      else if (sof === maxSofridos && sof > 0) frangueiros.push(gk.id);
+    });
+    frango = maxSofridos > 0 ? frangueiros : [];
+  }
+  return { artilheiros, mvp: game.mvp, frango };
+}
+
+const APOSTA_CUSTO = { artilheiro: 2, mvp: 2, frango: 1 };
+
+function bolaoPoolResult(game, players) {
+  // retorna { categorias: { artilheiro: {pool, vencedores, share}, mvp: {...}, frango: {...} }, ganhosPorJogador: {id: valor} }
+  const res = resolveBolao(game, players);
+  const ganhosPorJogador = {};
+  const categorias = {};
+  if (!res) return { categorias, ganhosPorJogador };
+  const defs = [
+    { key: 'artilheiro', cost: APOSTA_CUSTO.artilheiro, acertou: (pal) => pal.artilheiro && res.artilheiros.includes(pal.artilheiro) },
+    { key: 'mvp', cost: APOSTA_CUSTO.mvp, acertou: (pal) => pal.mvp && pal.mvp === res.mvp },
+    { key: 'frango', cost: APOSTA_CUSTO.frango, acertou: (pal) => res.frango && pal.frango && res.frango.includes(pal.frango) },
+  ];
+  defs.forEach(({ key, cost, acertou }) => {
+    const apostadores = Object.entries(game.palpites || {}).filter(([, pal]) => pal[key]);
+    if (apostadores.length === 0) { categorias[key] = { pool: 0, vencedores: [], share: 0 }; return; }
+    const pool = apostadores.length * cost;
+    const vencedores = apostadores.filter(([, pal]) => acertou(pal)).map(([pid]) => pid);
+    const share = vencedores.length > 0 ? Math.floor(pool / vencedores.length) : 0;
+    categorias[key] = { pool, vencedores, share };
+    vencedores.forEach(pid => { ganhosPorJogador[pid] = (ganhosPorJogador[pid] || 0) + share; });
+  });
+  return { categorias, ganhosPorJogador };
+}
+
+function totalApostado(player, games) {
+  let total = 0;
+  games.forEach(g => {
+    const p = g.palpites?.[player.id];
+    if (!p) return;
+    if (p.artilheiro) total += APOSTA_CUSTO.artilheiro;
+    if (p.mvp) total += APOSTA_CUSTO.mvp;
+    if (p.frango) total += APOSTA_CUSTO.frango;
+  });
+  return total;
+}
+
+const MOEDAS = { presenca: 3, gol: 2, assist: 1, mvp: 5 };
+
+function moedasParticipacao(player, games) {
+  let moedas = 0;
+  games.forEach(g => {
+    if (g.rsvp[player.id] === 'sim') moedas += MOEDAS.presenca;
+    const s = g.stats?.[player.id];
+    if (s) {
+      moedas += (Number(s.gols) || 0) * MOEDAS.gol;
+      moedas += (Number(s.assist) || 0) * MOEDAS.assist;
+    }
+    if (g.mvp === player.id) moedas += MOEDAS.mvp;
+  });
+  return moedas;
+}
+
+function moedasAtuais(player, players, games) {
+  let ganhosApostas = 0;
+  games.forEach(g => {
+    const { ganhosPorJogador } = bolaoPoolResult(g, players);
+    ganhosApostas += ganhosPorJogador[player.id] || 0;
+  });
+  return moedasParticipacao(player, games) - totalApostado(player, games) + ganhosApostas;
+}
+
+function generateZoeiras(game, players) {
+  const lines = [];
+  const stats = game.stats || {};
+  if (Object.keys(stats).length === 0) return lines;
+  const confirmados = players.filter(p => game.rsvp[p.id] === 'sim');
+  const nome = (id) => players.find(p => p.id === id)?.name;
+
+  if (game.mvp) {
+    const mvpNome = nome(game.mvp);
+    if (mvpNome) lines.push(`👑 ${mvpNome} foi o rei do jogo hoje!`);
+  }
+
+  let maxGols = 0, artilheiro = null;
+  Object.entries(stats).forEach(([pid, s]) => {
+    const g = Number(s.gols) || 0;
+    if (g > maxGols) { maxGols = g; artilheiro = pid; }
+  });
+  if (artilheiro && maxGols >= 3) lines.push(`🎩 ${nome(artilheiro)} fez hat-trick! ${maxGols} gols na conta`);
+  else if (artilheiro && maxGols === 2) lines.push(`🔥 ${nome(artilheiro)} balançou a rede 2 vezes`);
+
+  confirmados.filter(p => p.position === 'goleiro').forEach(gk => {
+    const s = stats[gk.id];
+    if (!s) return;
+    const sof = Number(s.sofridos) || 0;
+    if (sof >= 4) lines.push(`🐔 ${gk.name} levou frango hoje (${sof} gols sofridos)`);
+    else if (sof === 0) lines.push(`🧤 ${gk.name} não tomou nem um gol! Parede.`);
+  });
+
+  const penaltiDef = Object.entries(stats).find(([, s]) => (Number(s.penaltis) || 0) > 0);
+  if (penaltiDef) lines.push(`🚫 ${nome(penaltiDef[0])} pegou pênalti, seguro na hora H!`);
+
+  return lines;
+}
+
+function ZoeiraCard({ lines }) {
+  if (lines.length === 0) return null;
+  return (
+    <div className="bg-gradient-to-br from-purple-500/10 to-transparent border border-purple-500/20 rounded-2xl p-3.5">
+      <p className="text-[10px] font-black text-purple-300/80 uppercase mb-2 flex items-center gap-1.5">😂 Resumo zoeiro do jogo</p>
+      <div className="space-y-1.5">
+        {lines.map((l, i) => <p key={i} className="text-xs text-zinc-200">{l}</p>)}
+      </div>
+    </div>
+  );
+}
+
+function VotingCard({ title, emoji, options, votes, myId, onVote, players }) {
+  const myVote = votes?.[myId];
+  const [choice, setChoice] = useState('');
+  const counts = {};
+  Object.values(votes || {}).forEach(vid => { counts[vid] = (counts[vid] || 0) + 1; });
+  const ranked = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+
+  if (!myId || options.length === 0) return null;
+  return (
+    <div className="bg-zinc-900 rounded-2xl border border-white/10 p-3.5">
+      <p className="text-xs font-black text-zinc-400 uppercase mb-2 flex items-center gap-1.5">{emoji} {title}</p>
+      {myVote ? (
+        <div>
+          <p className="text-xs text-zinc-400 mb-2">Você votou em <span className="font-bold text-zinc-100">{players.find(p => p.id === myVote)?.name}</span></p>
+          {ranked.length > 0 && (
+            <div className="space-y-2">
+              {ranked.map(([pid, count]) => {
+                const voters = Object.entries(votes || {}).filter(([, v]) => v === pid).map(([voterId]) => players.find(p => p.id === voterId)?.name).filter(Boolean);
+                return (
+                  <div key={pid}>
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="flex-1 text-zinc-300 truncate font-semibold">{players.find(p => p.id === pid)?.name}</span>
+                      <span className="font-bold text-amber-400">{count} voto{count > 1 ? 's' : ''}</span>
+                    </div>
+                    {voters.length > 0 && <p className="text-[10px] text-zinc-500 mt-0.5">Votos de: {voters.join(', ')}</p>}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="flex gap-2">
+          <select value={choice} onChange={(e) => setChoice(e.target.value)} className="flex-1 bg-zinc-800 border border-white/10 rounded-lg px-2 py-2 text-xs text-zinc-100 outline-none">
+            <option value="">Escolher jogador</option>
+            {options.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+          <button onClick={() => choice && onVote(choice)} className="px-3 bg-amber-500 text-black text-xs font-bold rounded-lg shrink-0">Votar</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function GameVotingSection({ game, players, myId, onVoteMvp, onVoteGoleiro, onVoteEnquete }) {
+  const confirmados = players.filter(p => game.rsvp[p.id] === 'sim');
+  const goleiros = confirmados.filter(p => p.position === 'goleiro');
+  return (
+    <div className="space-y-2.5">
+      <VotingCard title="MVP da pelada" emoji="👑" options={confirmados} votes={game.votosMvp} myId={myId} onVote={(id) => onVoteMvp(game.id, myId, id)} players={players} />
+      {goleiros.length > 0 && (
+        <VotingCard title="Melhor goleiro" emoji="🧤" options={goleiros} votes={game.votosGoleiro} myId={myId} onVote={(id) => onVoteGoleiro(game.id, myId, id)} players={players} />
+      )}
+      <VotingCard title="Bola murcha do dia" emoji="🥔" options={confirmados} votes={game.enquete} myId={myId} onVote={(id) => onVoteEnquete(game.id, myId, id)} players={players} />
+    </div>
+  );
+}
+
+function VotacaoResultCard({ game, players }) {
+  if (!game.mvp) return null;
+  const nome = (id) => players.find(p => p.id === id)?.name;
+  const counts = {};
+  Object.values(game.enquete || {}).forEach(v => { counts[v] = (counts[v] || 0) + 1; });
+  let murchaWinner = null, max = 0;
+  Object.entries(counts).forEach(([id, c]) => { if (c > max) { max = c; murchaWinner = id; } });
+  return (
+    <div className="bg-zinc-900 rounded-2xl border border-white/10 p-3.5">
+      <p className="text-[10px] font-black text-zinc-500 uppercase mb-2">🏆 Resultado da pelada de {fmtDate(game.date)}</p>
+      <div className="space-y-1 text-xs text-zinc-300">
+        <p>👑 MVP: <span className="font-bold text-zinc-100">{nome(game.mvp)}</span></p>
+        {game.melhorGoleiroId && <p>🧤 Melhor goleiro: <span className="font-bold text-zinc-100">{nome(game.melhorGoleiroId)}</span></p>}
+        {murchaWinner && <p>🥔 Bola murcha: <span className="font-bold text-zinc-100">{nome(murchaWinner)}</span></p>}
+      </div>
+    </div>
+  );
+}
+
+function VotacaoTab({ games, players, myId, onVoteMvp, onVoteGoleiro, onVoteEnquete }) {
+  const aberto = games.find(g => g.votacaoAberta && !g.mvp);
+  const ultimoFechado = React.useMemo(() => {
+    const fechados = games.filter(g => g.mvp);
+    return [...fechados].sort((a, b) => b.date.localeCompare(a.date))[0] || null;
+  }, [games]);
+
+  return (
+    <div className="p-4 space-y-5">
+      <div>
+        <p className="text-xs font-black text-zinc-400 uppercase mb-2 flex items-center gap-1.5"><Medal className="w-3.5 h-3.5 text-amber-400" /> Votação da pelada</p>
+        {!aberto ? (
+          <EmptyState icon={Medal} text="Nenhuma votação aberta agora" sub="Assim que o organizador encerrar um jogo, a votação aparece aqui" />
+        ) : !myId ? (
+          <div className="bg-zinc-900 rounded-2xl border border-white/10 p-4 text-center">
+            <p className="text-sm text-zinc-400">Escolha sua identidade (no cadeado 🔒) pra votar.</p>
+          </div>
+        ) : (
+          <div className="space-y-2.5">
+            <p className="text-[11px] text-zinc-500">Pelada de {fmtDate(aberto.date)}</p>
+            <GameVotingSection game={aberto} players={players} myId={myId} onVoteMvp={onVoteMvp} onVoteGoleiro={onVoteGoleiro} onVoteEnquete={onVoteEnquete} />
+          </div>
+        )}
+      </div>
+      {ultimoFechado && (
+        <div>
+          <p className="text-xs font-black text-zinc-400 uppercase mb-2">Última pelada encerrada</p>
+          <VotacaoResultCard game={ultimoFechado} players={players} />
+        </div>
+      )}
+    </div>
+  );
 }
 
 function snakeDistribute(sortedList, numTeams) {
@@ -169,45 +417,207 @@ function shareCanvas(canvas, filename) {
   }, 'image/png');
 }
 
+function roundRectPath(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+const PREMIUM_HEX = {
+  black: '#050608', blackBlue: '#080D16', gold: '#F5C542', goldDark: '#9C6B08',
+  white: '#F5F5F5', purple: '#5146E5', green: '#21D39B', navy: '#07152A',
+};
+
+const ATTR_EMOJI = {
+  finalizacao: '🎯', marcacao: '🛡️', velocidade: '⚡', drible: '👟', passe: '➤',
+  fisico: '💪', cabeceio: '⬆️', chuteLonge: '🚀', visaoDeJogo: '👁️',
+  reflexo: '⚡', posicionamento: '📍', defesa: '🛡️', agilidade: '💨', impulsao: '⬆️',
+  saidaDeGol: '✋', reposicao: '➤',
+};
+const ATTR_SHORT_LABEL = { chuteLonge: 'CHUTE LONGE', visaoDeJogo: 'VISÃO JOGO', posicionamento: 'POSIÇÃO', saidaDeGol: 'SAÍDA GOL' };
+
 function drawPlayerCardCanvas(player, extra, done) {
-  const W = 640, H = 800;
+  const W = 640, H = 1020;
   const canvas = document.createElement('canvas');
   canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext('2d');
   const overall = overallOf(player);
-  const [c1, c2] = tierColorHex(overall);
-  const grad = ctx.createLinearGradient(0, 0, W, H);
-  grad.addColorStop(0, c1); grad.addColorStop(1, c2);
-  ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H);
+  const tier = cardTier(overall);
+  const P = PREMIUM_HEX;
 
-  const finish = () => {
+  // fundo preto + atmosfera de estádio (glows radiais)
+  ctx.fillStyle = P.black; ctx.fillRect(0, 0, W, H);
+  const navyGlow = ctx.createRadialGradient(W * 0.18, 60, 20, W * 0.18, 60, 420);
+  navyGlow.addColorStop(0, P.navy); navyGlow.addColorStop(1, 'rgba(7,21,42,0)');
+  ctx.fillStyle = navyGlow; ctx.fillRect(0, 0, W, H);
+  const navyGlow2 = ctx.createRadialGradient(W * 0.9, H * 0.95, 20, W * 0.9, H * 0.95, 420);
+  navyGlow2.addColorStop(0, P.navy); navyGlow2.addColorStop(1, 'rgba(7,21,42,0)');
+  ctx.fillStyle = navyGlow2; ctx.fillRect(0, 0, W, H);
+
+  // brilhos de holofote nos cantos superiores
+  const goldGlow = ctx.createRadialGradient(70, 20, 10, 70, 20, 220);
+  goldGlow.addColorStop(0, 'rgba(245,197,66,0.30)'); goldGlow.addColorStop(1, 'rgba(245,197,66,0)');
+  ctx.fillStyle = goldGlow; ctx.fillRect(0, 0, W, H);
+  const whiteGlow = ctx.createRadialGradient(W - 70, 20, 10, W - 70, 20, 220);
+  whiteGlow.addColorStop(0, 'rgba(255,255,255,0.18)'); whiteGlow.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = whiteGlow; ctx.fillRect(0, 0, W, H);
+
+  // sugestão de gramado bem discreta no rodapé
+  const grassGlow = ctx.createLinearGradient(0, H - 130, 0, H);
+  grassGlow.addColorStop(0, 'rgba(33,211,155,0)'); grassGlow.addColorStop(1, 'rgba(33,211,155,0.12)');
+  ctx.fillStyle = grassGlow; ctx.fillRect(0, H - 130, W, 130);
+
+  // faíscas douradas
+  const sparks = [[30, 40], [W - 40, 60], [40, H - 60], [W - 30, H - 100], [20, H * 0.45], [W - 25, H * 0.55]];
+  ctx.fillStyle = 'rgba(245,197,66,0.85)';
+  sparks.forEach(([sx, sy]) => { ctx.beginPath(); ctx.arc(sx, sy, 2.6, 0, Math.PI * 2); ctx.fill(); });
+
+  // moldura metálica
+  roundRectPath(ctx, 16, 16, W - 32, H - 32, 28);
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = P.goldDark;
+  ctx.stroke();
+  roundRectPath(ctx, 20, 20, W - 40, H - 40, 24);
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = 'rgba(245,197,66,0.25)';
+  ctx.stroke();
+
+  // topo esquerdo: número + posição + tier
+  ctx.textAlign = 'left';
+  ctx.fillStyle = P.white;
+  ctx.font = '900 34px sans-serif';
+  ctx.fillText(`#${player.numero || '-'}`, 46, 78);
+  ctx.font = '900 20px sans-serif';
+  ctx.fillText(player.position === 'goleiro' ? 'GOLEIRO' : 'LINHA', 46, 108);
+  ctx.fillStyle = P.gold;
+  ctx.font = '800 16px sans-serif';
+  ctx.fillText(tier.name.toUpperCase(), 46, 132);
+
+  // topo direito: GERAL + overall grande dourado com brilho
+  ctx.textAlign = 'right';
+  ctx.fillStyle = P.white;
+  ctx.font = '900 18px sans-serif';
+  ctx.fillText('GERAL', W - 46, 60);
+  ctx.save();
+  ctx.shadowColor = 'rgba(245,197,66,0.7)'; ctx.shadowBlur = 24;
+  ctx.fillStyle = P.gold;
+  ctx.font = '900 74px sans-serif';
+  ctx.fillText(String(overall), W - 46, 132);
+  ctx.restore();
+
+  const drawRestOfCard = () => {
+    // brilho difuso atrás do avatar
+    const avatarGlow = ctx.createRadialGradient(W / 2, 270, 20, W / 2, 270, 175);
+    avatarGlow.addColorStop(0, 'rgba(245,197,66,0.30)'); avatarGlow.addColorStop(1, 'rgba(245,197,66,0)');
+    ctx.fillStyle = avatarGlow; ctx.fillRect(W / 2 - 175, 95, 350, 350);
+
+    // anéis dourados ao redor da foto
+    ctx.beginPath(); ctx.arc(W / 2, 270, 158, 0, Math.PI * 2);
+    ctx.lineWidth = 6; ctx.strokeStyle = P.gold; ctx.stroke();
+    ctx.beginPath(); ctx.arc(W / 2, 270, 168, 0, Math.PI * 2);
+    ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(245,197,66,0.35)'; ctx.stroke();
+
+    // nome dourado itálico com brilho
+    ctx.save();
     ctx.textAlign = 'center';
-    ctx.fillStyle = '#0f172a';
-    ctx.font = '900 100px sans-serif';
-    ctx.fillText(String(overall), W / 2, 420);
-    ctx.font = '700 42px sans-serif';
-    ctx.fillText(player.name, W / 2, 480);
-    ctx.font = '700 22px sans-serif';
-    ctx.fillText(player.position === 'goleiro' ? 'GOLEIRO' : 'LINHA', W / 2, 512);
+    ctx.font = 'italic 900 52px sans-serif';
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillText(player.name.toUpperCase(), W / 2 + 2, 496 + 2);
+    ctx.shadowColor = 'rgba(245,197,66,0.5)'; ctx.shadowBlur = 20;
+    ctx.fillStyle = P.gold;
+    ctx.fillText(player.name.toUpperCase(), W / 2, 496);
+    ctx.restore();
+
+    // painel de atributos (vidro escuro, linhas de 5)
     const attrs = attrsFor(player.position);
-    ctx.textAlign = 'left';
-    ctx.font = '600 26px sans-serif';
-    let y = 580;
-    attrs.forEach(a => {
-      const v = player.attrs?.[a.key] ?? 50;
-      ctx.fillStyle = 'rgba(15,23,42,0.85)';
-      ctx.fillText(a.label, 90, y);
-      ctx.textAlign = 'right';
-      ctx.fillText(String(v), W - 90, y);
-      ctx.textAlign = 'left';
-      y += 38;
+    const rows = attrs.length > 5 ? [attrs.slice(0, 5), attrs.slice(5)] : [attrs];
+    const panelX = 44, panelW = W - 88, cellH = 96;
+    const panelY = 536, panelH = rows.length * cellH;
+    roundRectPath(ctx, panelX, panelY, panelW, panelH, 18);
+    ctx.fillStyle = 'rgba(255,255,255,0.045)';
+    ctx.fill();
+    ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(156,107,8,0.4)'; ctx.stroke();
+
+    rows.forEach((row, ri) => {
+      const cellW = panelW / row.length;
+      const rowY = panelY + ri * cellH;
+      if (ri > 0) {
+        ctx.beginPath(); ctx.moveTo(panelX, rowY); ctx.lineTo(panelX + panelW, rowY);
+        ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.stroke();
+      }
+      row.forEach((a, ci) => {
+        const cx = panelX + ci * cellW + cellW / 2;
+        if (ci > 0) {
+          ctx.beginPath(); ctx.moveTo(panelX + ci * cellW, rowY + 12); ctx.lineTo(panelX + ci * cellW, rowY + cellH - 12);
+          ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.stroke();
+        }
+        ctx.textAlign = 'center';
+        ctx.font = '22px sans-serif';
+        ctx.fillText(ATTR_EMOJI[a.key] || '⚽', cx, rowY + 28);
+        ctx.font = '900 30px sans-serif';
+        ctx.fillStyle = P.white;
+        ctx.fillText(String(player.attrs?.[a.key] ?? 50), cx, rowY + 60);
+        ctx.font = '700 10px sans-serif';
+        ctx.fillStyle = 'rgba(245,245,245,0.55)';
+        const label = (ATTR_SHORT_LABEL[a.key] || a.label.toUpperCase());
+        ctx.fillText(label, cx, rowY + 80);
+      });
     });
+
+    // painel de estatísticas
+    const statY = panelY + panelH + 22;
+    const statH = 168;
+    roundRectPath(ctx, panelX, statY, panelW, statH, 18);
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.fill();
+
+    const stat3 = (label, value, x, color, glow, emoji) => {
+      ctx.textAlign = 'center';
+      ctx.font = '18px sans-serif';
+      ctx.fillText(emoji, x, statY + 32);
+      ctx.save();
+      if (glow) { ctx.shadowColor = color; ctx.shadowBlur = 14; }
+      ctx.fillStyle = color;
+      ctx.font = '900 34px sans-serif';
+      ctx.fillText(String(value), x, statY + 74);
+      ctx.restore();
+      ctx.font = '700 12px sans-serif';
+      ctx.fillStyle = 'rgba(245,245,245,0.55)';
+      ctx.fillText(label.toUpperCase(), x, statY + 94);
+    };
+    stat3('Pontos', extra.pts, W / 2 - 175, P.green, true, '⭐');
+    stat3('Jogos', extra.jogos, W / 2, P.white, false, '📅');
+    stat3('MVP', extra.mvpCount, W / 2 + 175, P.gold, false, '👑');
+
+    ctx.beginPath(); ctx.moveTo(panelX + 20, statY + 108); ctx.lineTo(panelX + panelW - 20, statY + 108);
+    ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.stroke();
+
+    const stat2 = (label, value, x) => {
+      ctx.textAlign = 'center';
+      ctx.font = '900 30px sans-serif';
+      ctx.fillStyle = P.white;
+      ctx.fillText(String(value), x, statY + 148);
+      ctx.font = '700 12px sans-serif';
+      ctx.fillStyle = 'rgba(245,245,245,0.55)';
+      ctx.fillText(label.toUpperCase(), x, statY + 166);
+    };
+    if (player.position === 'goleiro') {
+      stat2('Defesas', extra.defesas ?? 0, W / 2 - 88);
+      stat2('Pênaltis def.', extra.penaltis ?? 0, W / 2 + 88);
+    } else {
+      stat2('Gols', extra.gols ?? 0, W / 2 - 88);
+      stat2('Assist.', extra.assist ?? 0, W / 2 + 88);
+    }
+
     ctx.textAlign = 'center';
-    ctx.font = '700 22px sans-serif';
-    ctx.fillStyle = 'rgba(15,23,42,0.7)';
-    ctx.fillText(`${extra.pts} pts · ${extra.jogos} jogos · ${extra.mvpCount} MVP`, W / 2, y + 18);
-    ctx.font = '700 20px sans-serif';
-    ctx.fillText('Racha do Grupo', W / 2, H - 30);
+    ctx.font = '800 18px sans-serif';
+    ctx.fillStyle = 'rgba(245,245,245,0.5)';
+    ctx.fillText('RACHA DO GRUPO', W / 2, H - 26);
+
     done(canvas);
   };
 
@@ -216,65 +626,114 @@ function drawPlayerCardCanvas(player, extra, done) {
     img.onload = () => {
       ctx.save();
       ctx.beginPath();
-      ctx.arc(W / 2, 220, 150, 0, Math.PI * 2);
+      ctx.arc(W / 2, 270, 150, 0, Math.PI * 2);
       ctx.closePath();
       ctx.clip();
-      ctx.drawImage(img, W / 2 - 150, 70, 300, 300);
+      ctx.drawImage(img, W / 2 - 150, 120, 300, 300);
       ctx.restore();
-      finish();
+      drawRestOfCard();
     };
-    img.onerror = finish;
+    img.onerror = drawRestOfCard;
     img.src = player.foto;
   } else {
-    ctx.fillStyle = 'rgba(255,255,255,0.35)';
-    ctx.beginPath(); ctx.arc(W / 2, 220, 150, 0, Math.PI * 2); ctx.fill();
-    finish();
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(W / 2, 270, 150, 0, Math.PI * 2);
+    ctx.fillStyle = P.purple;
+    ctx.fill();
+    ctx.font = '900 90px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(player.name.trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase(), W / 2, 296);
+    ctx.restore();
+    drawRestOfCard();
   }
 }
 
 function drawCompareCanvas(a, b, rA, rB, done) {
-  const W = 800, H = 700;
-  const canvas = document.createElement('canvas');
-  canvas.width = W; canvas.height = H;
-  const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#0c4a3e';
-  ctx.fillRect(0, 0, W, H);
-  ctx.textAlign = 'center';
-  ctx.fillStyle = '#fff';
-  ctx.font = '900 28px sans-serif';
-  ctx.fillText(`${a.name} vs ${b.name}`, W / 2, 60);
-
   const rows = [
     ['Overall', overallOf(a), overallOf(b)],
     ['Pontos', rA.pts, rB.pts],
     ['Jogos', rA.jogos, rB.jogos],
     ['MVPs', rA.mvpCount, rB.mvpCount],
   ];
-  if (a.position === b.position) {
-    attrsFor(a.position).forEach(attr => rows.push([attr.label, a.attrs?.[attr.key] ?? 50, b.attrs?.[attr.key] ?? 50]));
+  const sharedAttrs = a.position === b.position;
+  if (sharedAttrs) {
+    attrsFor(a.position).forEach(attr => rows.push([ATTR_SHORT_LABEL[attr.key] || attr.label, a.attrs?.[attr.key] ?? 50, b.attrs?.[attr.key] ?? 50, attr.key]));
   }
-  let y = 140;
-  rows.forEach(([label, va, vb]) => {
-    ctx.font = '700 26px sans-serif';
-    ctx.fillStyle = va >= vb ? '#34d399' : '#e2e8f0';
-    ctx.textAlign = 'left';
-    ctx.fillText(String(va), 60, y);
-    ctx.fillStyle = '#d1fae5';
-    ctx.font = '600 20px sans-serif';
+
+  const W = 640;
+  const headerH = 190, rowH = 44, footerH = 50;
+  const H = headerH + rows.length * rowH + footerH;
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  const P = PREMIUM_HEX;
+
+  ctx.fillStyle = P.black; ctx.fillRect(0, 0, W, H);
+  const navyGlow = ctx.createRadialGradient(W / 2, 0, 10, W / 2, 0, 380);
+  navyGlow.addColorStop(0, P.navy); navyGlow.addColorStop(1, 'rgba(7,21,42,0)');
+  ctx.fillStyle = navyGlow; ctx.fillRect(0, 0, W, H);
+
+  roundRectPath(ctx, 14, 14, W - 28, H - 28, 24);
+  ctx.lineWidth = 2; ctx.strokeStyle = P.goldDark; ctx.stroke();
+  roundRectPath(ctx, 18, 18, W - 36, H - 36, 20);
+  ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(245,197,66,0.25)'; ctx.stroke();
+
+  // avatares + nomes
+  const drawMini = (player, cx) => {
+    ctx.beginPath(); ctx.arc(cx, 82, 42, 0, Math.PI * 2);
+    ctx.lineWidth = 3; ctx.strokeStyle = P.gold; ctx.stroke();
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx, 82, 39, 0, Math.PI * 2); ctx.clip();
+    ctx.fillStyle = P.purple; ctx.fill();
+    ctx.restore();
     ctx.textAlign = 'center';
-    ctx.fillText(label, W / 2, y);
-    ctx.font = '700 26px sans-serif';
-    ctx.fillStyle = vb >= va ? '#34d399' : '#e2e8f0';
-    ctx.textAlign = 'right';
-    ctx.fillText(String(vb), W - 60, y);
-    y += 46;
-  });
+    ctx.font = '900 30px sans-serif'; ctx.fillStyle = '#fff';
+    ctx.fillText(player.name.trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase(), cx, 93);
+    ctx.font = 'italic 900 20px sans-serif'; ctx.fillStyle = P.gold;
+    const name = player.name.toUpperCase();
+    ctx.fillText(name.length > 14 ? name.slice(0, 13) + '…' : name, cx, 148);
+  };
+  drawMini(a, W * 0.27);
+  drawMini(b, W * 0.73);
+
   ctx.textAlign = 'center';
-  ctx.font = '700 20px sans-serif';
-  ctx.fillStyle = 'rgba(255,255,255,0.6)';
-  ctx.fillText('Racha do Grupo', W / 2, H - 30);
+  ctx.font = '900 22px sans-serif'; ctx.fillStyle = 'rgba(245,245,245,0.5)';
+  ctx.fillText('VS', W / 2, 90);
+
+  let y = headerH + 4;
+  rows.forEach(([label, va, vb]) => {
+    const aWins = va > vb, bWins = vb > va;
+    ctx.textAlign = 'left';
+    ctx.font = '900 24px sans-serif';
+    ctx.fillStyle = aWins ? P.green : '#fff';
+    ctx.fillText(String(va) + (aWins ? ' ▲' : ''), 46, y);
+
+    ctx.textAlign = 'center';
+    ctx.font = '700 13px sans-serif';
+    ctx.fillStyle = 'rgba(245,245,245,0.55)';
+    ctx.fillText(String(label).toUpperCase(), W / 2, y - 4);
+
+    ctx.textAlign = 'right';
+    ctx.font = '900 24px sans-serif';
+    ctx.fillStyle = bWins ? P.green : '#fff';
+    ctx.fillText((bWins ? '▲ ' : '') + String(vb), W - 46, y);
+
+    y += rowH;
+    if (y < H - footerH) {
+      ctx.beginPath(); ctx.moveTo(30, y - rowH + 16); ctx.lineTo(W - 30, y - rowH + 16);
+      ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(255,255,255,0.06)'; ctx.stroke();
+    }
+  });
+
+  ctx.textAlign = 'center';
+  ctx.font = '800 16px sans-serif';
+  ctx.fillStyle = 'rgba(245,245,245,0.5)';
+  ctx.fillText('RACHA DO GRUPO', W / 2, H - 22);
   done(canvas);
 }
+
 
 function useCountUp(value, duration = 600) {
   const [display, setDisplay] = useState(0);
@@ -311,9 +770,9 @@ function Confetti() {
 }
 
 function Avatar({ player, size = 'md', highlight = false }) {
-  const sizeMap = { sm: 'w-10 h-10 text-xs', md: 'w-12 h-12 text-sm', lg: 'w-24 h-24 text-xl' };
-  const badgeBox = size === 'lg' ? 'w-6 h-6' : 'w-4 h-4';
-  const badgeIcon = size === 'lg' ? 'w-3.5 h-3.5' : 'w-2.5 h-2.5';
+  const sizeMap = { sm: 'w-10 h-10 text-xs', md: 'w-12 h-12 text-sm', lg: 'w-24 h-24 text-xl', xl: 'w-32 h-32 text-3xl' };
+  const badgeBox = size === 'lg' || size === 'xl' ? 'w-6 h-6' : 'w-4 h-4';
+  const badgeIcon = size === 'lg' || size === 'xl' ? 'w-3.5 h-3.5' : 'w-2.5 h-2.5';
   const ringCls = highlight ? 'ring-4 ring-amber-300' : 'ring-2 ring-white';
   const PositionIcon = player.position === 'goleiro' ? Shield : Footprints;
   const badgeColor = player.position === 'goleiro' ? 'bg-sky-600' : 'bg-emerald-600';
@@ -423,9 +882,39 @@ export default function PeladaApp() {
 
   const guard = (fn) => (...args) => { if (isOrganizer) fn(...args); };
 
+  const abrirVotacao = guard((gameId) => {
+    saveGames(games.map(g => g.id === gameId ? { ...g, votacaoAberta: true } : g));
+    setToast('Votação aberta! Chama a galera pra votar 📣');
+  });
+
+  const apurarVotacao = guard((gameId) => {
+    const game = games.find(g => g.id === gameId);
+    const winner = (votes) => {
+      const counts = {};
+      Object.values(votes || {}).forEach(v => { counts[v] = (counts[v] || 0) + 1; });
+      let best = null, max = 0;
+      Object.entries(counts).forEach(([id, c]) => { if (c > max) { max = c; best = id; } });
+      return best;
+    };
+    saveGames(games.map(g => g.id === gameId ? { ...g, mvp: winner(g.votosMvp), melhorGoleiroId: winner(g.votosGoleiro), votacaoAberta: false } : g));
+    setToast('Votação encerrada! Resultado apurado 🏆');
+  });
+
+  const approvePhoto = guard((id) => {
+    const next = players.map(p => p.id === id ? { ...p, foto: p.fotoPendente, fotoPendente: null } : p);
+    savePlayers(next);
+    setToast('Foto aprovada!');
+  });
+
+  const rejectPhoto = guard((id) => {
+    const next = players.map(p => p.id === id ? { ...p, fotoPendente: null } : p);
+    savePlayers(next);
+    setToast('Foto recusada');
+  });
+
   const addPlayer = guard((name, position) => {
     if (!name.trim()) return;
-    savePlayers([...players, { id: uid(), name: name.trim(), position, numero: players.length + 1, foto: null, pin: null, attrs: defaultAttrs(position) }]);
+    savePlayers([...players, { id: uid(), name: name.trim(), position, numero: players.length + 1, foto: null, fotoPendente: null, pin: null, attrs: defaultAttrs(position) }]);
   });
 
   const removePlayer = guard((id) => savePlayers(players.filter(p => p.id !== id)));
@@ -436,7 +925,7 @@ export default function PeladaApp() {
 
   const createGame = guard(() => {
     const iso = new Date().toISOString().slice(0, 10);
-    const game = { id: uid(), date: iso, horario: '10:00', local: '', rsvp: {}, payments: {}, valor: '', teams: null, mvp: null, stats: {} };
+    const game = { id: uid(), date: iso, horario: '10:00', local: '', rsvp: {}, payments: {}, valor: '', teams: null, mvp: null, melhorGoleiroId: null, votacaoAberta: false, votosMvp: {}, votosGoleiro: {}, stats: {}, palpites: {}, enquete: {} };
     saveGames([game, ...games]);
     setSelectedGameId(game.id);
     setGameSubTab('presenca');
@@ -563,12 +1052,15 @@ export default function PeladaApp() {
           </button>
         </div>
         {!isOrganizer && me && (
-          <div className="relative mt-2 flex items-center gap-3">
+          <div className="relative mt-2 flex items-center gap-3 flex-wrap">
             <button onClick={clearIdentity} className="text-[11px] text-emerald-400 font-semibold underline">Trocar identidade</button>
             <label className="text-[11px] text-emerald-400 font-semibold underline cursor-pointer">
               Trocar minha foto
               <input type="file" accept="image/*" className="hidden" onChange={(e) => updateMyPhoto(e.target.files[0])} />
             </label>
+            {me.fotoPendente && (
+              <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full">Foto aguardando aprovação</span>
+            )}
           </div>
         )}
       </div>
@@ -582,13 +1074,17 @@ export default function PeladaApp() {
             <GameDetail game={selectedGame} players={players} subTab={gameSubTab} setSubTab={setGameSubTab}
               onBack={() => setSelectedGameId(null)} onRSVP={setRSVP} onPay={togglePayment} onStat={setStat}
               onDelete={deleteGame} onUpdate={(patch) => updateGame(selectedGame.id, patch)} onSorteio={() => doSorteio(selectedGame.id)}
+              onAbrirVotacao={() => abrirVotacao(selectedGame.id)} onApurarVotacao={() => apurarVotacao(selectedGame.id)}
+              myId={myId} onVoteMvp={voteMvp} onVoteGoleiro={voteGoleiro} onVoteEnquete={voteEnquete}
               send={send} />
           )}
-          {tab === 'jogos' && !isOrganizer && <ViewerJogos games={games} players={players} />}
+          {tab === 'jogos' && !isOrganizer && <ViewerJogos games={games} players={players} myId={myId} onVoteMvp={voteMvp} onVoteGoleiro={voteGoleiro} onVoteEnquete={voteEnquete} />}
           {tab === 'elenco' && isOrganizer && (
-            <ElencoTab players={players} onAdd={addPlayer} onOpenEdit={setEditPlayer} />
+            <ElencoTab players={players} onAdd={addPlayer} onOpenEdit={setEditPlayer} onApprovePhoto={approvePhoto} onRejectPhoto={rejectPhoto} />
           )}
           {tab === 'ranking' && <RankingTab ranking={ranking} onOpenCard={setCardPlayer} myId={myId} players={players} games={games} />}
+          {tab === 'bolao' && <BolaoTab games={games} players={players} myId={myId} onSetPalpite={setPalpite} onOpenCard={setCardPlayer} />}
+          {tab === 'votacao' && <VotacaoTab games={games} players={players} myId={myId} onVoteMvp={voteMvp} onVoteGoleiro={voteGoleiro} onVoteEnquete={voteEnquete} />}
         </div>
       </div>
 
@@ -611,11 +1107,15 @@ export default function PeladaApp() {
           <>
             <NavBtn icon={Calendar} label="Jogos" active={tab === 'jogos'} onClick={() => { setTab('jogos'); setSelectedGameId(null); }} />
             <NavBtn icon={Users} label="Elenco" active={tab === 'elenco'} onClick={() => setTab('elenco')} />
+            <NavBtn icon={Medal} label="Votação" active={tab === 'votacao'} onClick={() => setTab('votacao')} />
+            <NavBtn icon={Sparkles} label="Bolão" active={tab === 'bolao'} onClick={() => setTab('bolao')} />
             <NavBtn icon={Trophy} label="Ranking" active={tab === 'ranking'} onClick={() => setTab('ranking')} />
           </>
         ) : (
           <>
             <NavBtn icon={Trophy} label="Ranking" active={tab === 'ranking'} onClick={() => setTab('ranking')} />
+            <NavBtn icon={Medal} label="Votação" active={tab === 'votacao'} onClick={() => setTab('votacao')} />
+            <NavBtn icon={Sparkles} label="Bolão" active={tab === 'bolao'} onClick={() => setTab('bolao')} />
             <NavBtn icon={Calendar} label="Jogos" active={tab === 'jogos'} onClick={() => setTab('jogos')} />
           </>
         )}
@@ -626,7 +1126,7 @@ export default function PeladaApp() {
 
 function NavBtn({ icon: Icon, label, active, onClick }) {
   return (
-    <button onClick={onClick} className={`flex flex-col items-center gap-0.5 px-6 py-1.5 rounded-2xl transition-all duration-200 active:scale-90 ${active ? 'text-emerald-400 bg-emerald-500/10' : 'text-zinc-500'}`}>
+    <button onClick={onClick} className={`flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-2xl transition-all duration-200 active:scale-90 ${active ? 'text-emerald-400 bg-emerald-500/10' : 'text-zinc-500'}`}>
       <Icon className="w-5 h-5" strokeWidth={active ? 2.5 : 2} />
       <span className="text-[11px] font-semibold">{label}</span>
     </button>
@@ -721,6 +1221,48 @@ function AttrBar({ label, value }) {
   );
 }
 
+const PREMIUM = {
+  black: '#050608',
+  blackBlue: '#080D16',
+  gold: '#F5C542',
+  goldDark: '#9C6B08',
+  white: '#F5F5F5',
+  purple: '#5146E5',
+  green: '#21D39B',
+  navy: '#07152A',
+};
+
+function StatCell({ icon: Icon, value, label, color, glow }) {
+  const display = useCountUp(value);
+  return (
+    <div className="flex flex-col items-center">
+      <Icon className="w-3.5 h-3.5 mb-1" style={{ color }} />
+      <p className="text-lg font-black leading-none" style={{ color, textShadow: glow ? `0 0 10px ${color}88` : 'none' }}>{display}</p>
+      <p className="text-[9px] font-bold uppercase tracking-wide mt-1" style={{ color: 'rgba(245,245,245,0.55)' }}>{label}</p>
+    </div>
+  );
+}
+
+function AttrRow({ items, values }) {
+  return (
+    <div className="grid divide-x" style={{ gridTemplateColumns: `repeat(${items.length}, 1fr)`, borderColor: 'rgba(255,255,255,0.08)' }}>
+      {items.map(a => (
+        <div key={a.key} className="flex flex-col items-center px-0.5 py-2">
+          <a.Icon className="w-3.5 h-3.5 mb-1" style={{ color: PREMIUM.gold }} />
+          <span className="text-base font-black text-white leading-none">{values[a.key] ?? 50}</span>
+          <span className="text-[6.5px] font-bold uppercase text-center leading-tight mt-1 px-0.5" style={{ color: 'rgba(245,245,245,0.5)' }}>{a.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+const SPARK_DOTS = [
+  { top: '4%', left: '8%', s: 3 }, { top: '10%', left: '90%', s: 2 },
+  { top: '92%', left: '12%', s: 2 }, { top: '85%', left: '88%', s: 3 },
+  { top: '45%', left: '3%', s: 2 }, { top: '38%', left: '96%', s: 2 },
+];
+
 function PlayerCard({ player, games, onClose }) {
   const overall = overallOf(player);
   const tier = cardTier(overall);
@@ -747,69 +1289,95 @@ function PlayerCard({ player, games, onClose }) {
   if (streakGoals >= 3) badges.push({ Icon: Flame, label: `${streakGoals}x seguidos marcando` });
   if (games.length >= 3 && jogos === games.length) badges.push({ Icon: CheckCircle2, label: '100% presença' });
 
-  const handleShare = () => drawPlayerCardCanvas(player, { pts, jogos, mvpCount }, (canvas) => shareCanvas(canvas, `${player.name.replace(/\s+/g, '-')}-card.png`));
+  const handleShare = () => drawPlayerCardCanvas(player, { pts, jogos, mvpCount, gols, assist, defesas, penaltis }, (canvas) => shareCanvas(canvas, `${player.name.replace(/\s+/g, '-')}-card.png`));
+  const attrRows = attrs.length > 5 ? [attrs.slice(0, 5), attrs.slice(5)] : [attrs];
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-40 p-6 animate-[fadein_0.2s_ease-out]" onClick={onClose}>
-      <div className="w-full max-w-xs rounded-3xl overflow-hidden shadow-2xl animate-[popin_0.22s_ease-out] relative" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-40 p-6 animate-[fadein_0.2s_ease-out]" onClick={onClose}>
+      <div className="w-full max-w-xs rounded-[28px] overflow-hidden shadow-2xl relative animate-[popin_0.22s_ease-out]" style={{ background: PREMIUM.black }} onClick={(e) => e.stopPropagation()}>
         {overall >= 86 && <Confetti />}
-        <div className={`relative h-48 bg-gradient-to-br ${tier.grad}`}>
-          {player.foto ? (
-            <img src={player.foto} alt={player.name} className="absolute inset-0 w-full h-full object-cover" />
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
-              <span className={`text-9xl font-black opacity-20 ${tier.text}`}>{player.name.trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase()}</span>
+        {/* atmosfera de estádio */}
+        <div className="absolute inset-0" style={{ background: `radial-gradient(circle at 18% 6%, ${PREMIUM.navy} 0%, ${PREMIUM.black} 55%), radial-gradient(circle at 88% 96%, ${PREMIUM.navy} 0%, transparent 55%)` }} />
+        <div className="absolute -top-12 -left-10 w-40 h-40 rounded-full blur-3xl" style={{ background: PREMIUM.gold, opacity: 0.25 }} />
+        <div className="absolute -top-12 -right-10 w-40 h-40 rounded-full blur-3xl" style={{ background: '#ffffff', opacity: 0.15 }} />
+        <div className="absolute bottom-0 left-0 right-0 h-20" style={{ background: `linear-gradient(to top, ${PREMIUM.green}22, transparent)` }} />
+        {SPARK_DOTS.map((d, i) => (
+          <span key={i} className="absolute rounded-full" style={{ top: d.top, left: d.left, width: d.s, height: d.s, background: PREMIUM.gold, boxShadow: `0 0 6px 2px ${PREMIUM.gold}99` }} />
+        ))}
+
+        {/* moldura metálica */}
+        <div className="relative m-2 rounded-[22px]" style={{ border: `1px solid ${PREMIUM.goldDark}`, boxShadow: `inset 0 0 0 1px rgba(245,197,66,0.18), inset 0 0 24px rgba(245,197,66,0.05)` }}>
+          <div className="relative px-4 pt-4 pb-3">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-lg font-black text-white leading-none">#{player.numero || '-'}</p>
+                <p className="text-[10px] font-black uppercase tracking-widest mt-1.5 text-white">{isGk ? 'Goleiro' : 'Linha'}</p>
+                <p className="text-[9px] font-bold uppercase tracking-wide mt-0.5" style={{ color: PREMIUM.gold }}>{tier.name}</p>
+                <div className="w-6 h-6 flex items-center justify-center mt-1.5" style={{ background: 'rgba(245,197,66,0.12)', clipPath: 'polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)' }}>
+                  {isGk ? <Shield className="w-3 h-3" style={{ color: PREMIUM.gold }} /> : <Footprints className="w-3 h-3" style={{ color: PREMIUM.gold }} />}
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-[9px] font-black uppercase tracking-widest text-white">Geral</p>
+                <p className="text-4xl font-black leading-none" style={{ color: PREMIUM.gold, textShadow: `0 0 14px ${PREMIUM.gold}77` }}>{overall}</p>
+              </div>
             </div>
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-black/10" />
-          <span className={`absolute top-3 right-3 text-[9px] font-black uppercase tracking-wide px-2 py-1 rounded-full bg-black/30 backdrop-blur-sm text-white`}>{isGk ? 'Goleiro' : 'Linha'}</span>
-          <p className="absolute top-3 left-3 text-5xl font-black leading-none text-white drop-shadow-lg">{overall}</p>
-          <p className={`absolute top-[76px] left-3 text-[10px] font-black uppercase tracking-widest ${tier.accent}`}>{tier.name}</p>
-          <div className="absolute bottom-3 left-3 right-3">
-            <h3 className="text-xl font-black text-white drop-shadow-lg leading-tight">{player.name}</h3>
-            <p className="text-[11px] font-bold text-white/80">#{player.numero || '-'}</p>
-          </div>
-        </div>
-        <div className="bg-zinc-900 p-4">
-          {badges.length > 0 && (
-            <div className="flex gap-1.5 mb-3 flex-wrap">
-              {badges.map((b, i) => (
-                <span key={i} className="flex items-center gap-1 bg-amber-500/15 text-amber-300 text-[10px] font-bold px-2 py-1 rounded-full">
-                  <b.Icon className="w-3 h-3" /> {b.label}
-                </span>
-              ))}
+
+            <div className="flex flex-col items-center mt-1">
+              <div className="relative flex items-center justify-center">
+                <span className="absolute w-36 h-36 rounded-full blur-2xl" style={{ background: `${PREMIUM.gold}33` }} />
+                <span className="absolute -inset-1.5 rounded-full" style={{ border: `3px solid ${PREMIUM.gold}` }} />
+                <span className="absolute -inset-3 rounded-full" style={{ border: `1px solid ${PREMIUM.gold}55` }} />
+                <Avatar player={player} size="xl" />
+              </div>
+              <h3 className="italic font-black text-2xl mt-3 text-center leading-tight" style={{ color: PREMIUM.gold, textShadow: '0 2px 6px rgba(0,0,0,0.7), 0 0 18px rgba(245,197,66,0.35)' }}>{player.name.toUpperCase()}</h3>
             </div>
-          )}
-          <div className="mb-4 pb-4 border-b border-white/5">
-            <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2.5">Atributos</p>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-              {attrs.map(a => (
-                <AttrBar key={a.key} label={a.label} value={player.attrs?.[a.key] ?? 50} />
-              ))}
-            </div>
-          </div>
-          <div className="grid grid-cols-3 gap-2 text-center mb-2">
-            <MiniStat label="Pontos" value={pts} highlight icon={Star} />
-            <MiniStat label="Jogos" value={jogos} icon={Calendar} />
-            <MiniStat label="MVP" value={mvpCount} icon={Crown} />
-          </div>
-          <div className="grid grid-cols-2 gap-2 text-center">
-            {isGk ? (
-              <>
-                <MiniStat label="Defesas" value={defesas} icon={Shield} />
-                <MiniStat label="Pênaltis def." value={penaltis} icon={Award} />
-              </>
-            ) : (
-              <>
-                <MiniStat label="Gols" value={gols} icon={Target} />
-                <MiniStat label="Assist." value={assist} icon={Award} />
-              </>
+
+            {badges.length > 0 && (
+              <div className="flex gap-1.5 mt-3 flex-wrap justify-center">
+                {badges.map((b, i) => (
+                  <span key={i} className="flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full" style={{ background: 'rgba(245,197,66,0.12)', color: PREMIUM.gold }}>
+                    <b.Icon className="w-3 h-3" /> {b.label}
+                  </span>
+                ))}
+              </div>
             )}
+
+            <div className="mt-4 rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${PREMIUM.goldDark}44` }}>
+              {attrRows.map((row, i) => (
+                <div key={i}>
+                  <AttrRow items={row} values={player.attrs || {}} />
+                  {i < attrRows.length - 1 && <div className="h-px" style={{ background: 'rgba(255,255,255,0.08)' }} />}
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-3 rounded-2xl p-3" style={{ background: 'rgba(0,0,0,0.35)' }}>
+              <div className="grid grid-cols-3 gap-2">
+                <StatCell icon={Star} value={pts} label="Pontos" color={PREMIUM.green} glow />
+                <StatCell icon={Calendar} value={jogos} label="Jogos" color={PREMIUM.white} />
+                <StatCell icon={Crown} value={mvpCount} label="MVP" color={PREMIUM.gold} />
+              </div>
+              <div className="h-px my-2.5" style={{ background: 'rgba(255,255,255,0.08)' }} />
+              <div className="grid grid-cols-2 gap-2">
+                {isGk ? (
+                  <>
+                    <StatCell icon={Shield} value={defesas} label="Defesas" color={PREMIUM.white} />
+                    <StatCell icon={Award} value={penaltis} label="Pênaltis def." color={PREMIUM.white} />
+                  </>
+                ) : (
+                  <>
+                    <StatCell icon={Target} value={gols} label="Gols" color={PREMIUM.white} />
+                    <StatCell icon={Award} value={assist} label="Assist." color={PREMIUM.white} />
+                  </>
+                )}
+              </div>
+            </div>
           </div>
         </div>
-        <div className="flex">
-          <button onClick={handleShare} className="flex-1 flex items-center justify-center gap-1.5 bg-emerald-700 text-white font-bold text-sm py-2.5 transition-colors active:bg-emerald-800"><Share2 className="w-4 h-4" /> Compartilhar</button>
-          <button onClick={onClose} className="flex-1 bg-zinc-800 text-zinc-400 font-bold text-sm py-2.5 transition-colors active:bg-white/10">Fechar</button>
+        <div className="relative flex">
+          <button onClick={handleShare} className="flex-1 flex items-center justify-center gap-1.5 font-bold text-sm py-2.5 transition-colors" style={{ background: PREMIUM.gold, color: PREMIUM.black }}><Share2 className="w-4 h-4" /> Compartilhar</button>
+          <button onClick={onClose} className="flex-1 font-bold text-sm py-2.5 transition-colors text-zinc-400" style={{ background: PREMIUM.blackBlue }}>Fechar</button>
         </div>
       </div>
     </div>
@@ -872,7 +1440,7 @@ function PlayerEditModal({ player, onClose, onSave, onDelete }) {
             <p className="text-xs font-bold text-zinc-400 uppercase">Atributos (só o organizador vê e edita aqui)</p>
             {attrs.map(a => (
               <div key={a.key} className="flex items-center gap-2">
-                <span className="text-xs text-zinc-400 w-24 shrink-0">{a.label}</span>
+                <span className="text-[11px] text-zinc-400 w-28 shrink-0 leading-tight">{a.label}</span>
                 <input type="range" min="0" max="99" value={form.attrs[a.key]} onChange={(e) => setForm(f => ({ ...f, attrs: { ...f.attrs, [a.key]: Number(e.target.value) } }))} className="flex-1 accent-emerald-700" />
                 <span className="text-xs font-black text-zinc-100 w-6 text-right">{form.attrs[a.key]}</span>
               </div>
@@ -1104,7 +1672,7 @@ function PitchFormation({ teams, players }) {
   );
 }
 
-function ViewerJogos({ games, players }) {
+function ViewerJogos({ games, players, myId, onVoteMvp, onVoteGoleiro, onVoteEnquete }) {
   const [openId, setOpenId] = useState(null);
   const [showFormation, setShowFormation] = useState(false);
   return (
@@ -1113,6 +1681,7 @@ function ViewerJogos({ games, players }) {
       {games.map(g => {
         const confirmados = players.filter(p => g.rsvp[p.id] === 'sim');
         const open = openId === g.id;
+        const zoeiras = g.mvp ? generateZoeiras(g, players) : [];
         return (
           <div key={g.id} className="bg-zinc-900 rounded-2xl border border-white/10 overflow-hidden">
             <button onClick={() => { const next = !open; setOpenId(next ? g.id : null); setShowFormation(next && !!g.teams); }} className="w-full text-left p-4 transition-colors active:bg-white/5">
@@ -1120,16 +1689,16 @@ function ViewerJogos({ games, players }) {
               {g.local && <p className="text-xs text-zinc-500 mt-0.5">📍 {g.local}</p>}
             </button>
             {open && (
-              <div className="px-4 pb-4 space-y-1.5 border-t border-white/5 pt-3 animate-[fadein_0.2s_ease-out]">
+              <div className="px-4 pb-4 space-y-3 border-t border-white/5 pt-3 animate-[fadein_0.2s_ease-out]">
                 {g.teams && (
-                  <button onClick={() => setShowFormation(v => !v)} className="text-[11px] font-bold text-emerald-400 underline mb-2 block">
+                  <button onClick={() => setShowFormation(v => !v)} className="text-[11px] font-bold text-emerald-400 underline block">
                     {showFormation ? 'Ver pagamentos' : 'Ver escalação dos times'}
                   </button>
                 )}
                 {g.teams && showFormation ? (
                   <PitchFormation teams={g.teams} players={players} />
                 ) : (
-                  <>
+                  <div className="space-y-1.5">
                     {confirmados.length === 0 && <p className="text-xs text-zinc-500">Ninguém confirmado ainda.</p>}
                     {confirmados.map(p => (
                       <div key={p.id} className="flex items-center gap-2">
@@ -1138,8 +1707,14 @@ function ViewerJogos({ games, players }) {
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${g.payments[p.id] ? 'bg-emerald-500/15 text-emerald-300' : 'bg-amber-500/15 text-amber-300'}`}>{g.payments[p.id] ? 'Pago' : 'Pendente'}</span>
                       </div>
                     ))}
-                  </>
+                  </div>
                 )}
+                {g.votacaoAberta && !g.mvp && (
+                  <div className="bg-amber-500/10 border border-amber-500/25 rounded-xl p-3">
+                    <p className="text-xs font-bold text-amber-300">📣 Votação aberta! Vai na aba "Votação" pra votar no MVP, melhor goleiro e bola murcha.</p>
+                  </div>
+                )}
+                {zoeiras.length > 0 && <ZoeiraCard lines={zoeiras} />}
               </div>
             )}
           </div>
@@ -1176,7 +1751,7 @@ function CircleProgress({ percent }) {
   );
 }
 
-function GameDetail({ game, players, subTab, setSubTab, onBack, onRSVP, onPay, onStat, onDelete, onUpdate, onSorteio, send }) {
+function GameDetail({ game, players, subTab, setSubTab, onBack, onRSVP, onPay, onStat, onDelete, onUpdate, onSorteio, onAbrirVotacao, onApurarVotacao, myId, onVoteMvp, onVoteGoleiro, onVoteEnquete, send }) {
   const [formationView, setFormationView] = useState(true);
   const confirmados = players.filter(p => game.rsvp[p.id] === 'sim');
   const pendentes = players.filter(p => !game.rsvp[p.id]);
@@ -1341,17 +1916,35 @@ function GameDetail({ game, players, subTab, setSubTab, onBack, onRSVP, onPay, o
 
         {subTab === 'sumula' && (
           <div className="space-y-3 animate-[fadein_0.2s_ease-out]">
-            {confirmados.length > 0 && (
-              <div className="bg-zinc-900 rounded-xl border border-white/10 p-3 flex items-center gap-2">
-                <Star className="w-4 h-4 text-amber-500 shrink-0" />
-                <span className="text-xs font-bold text-zinc-400 shrink-0">MVP</span>
-                <select value={game.mvp || ''} onChange={(e) => onUpdate({ mvp: e.target.value || null })} className="flex-1 text-sm font-bold text-zinc-100 bg-zinc-800 rounded-lg px-2 py-1.5 outline-none">
-                  <option value="">Selecionar craque do jogo</option>
-                  {confirmados.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                </select>
+            {confirmados.length > 0 && !game.mvp && !game.votacaoAberta && (
+              <button onClick={onAbrirVotacao} className="w-full flex items-center justify-center gap-2 bg-amber-500 text-black font-black py-3 rounded-xl text-sm transition-transform active:scale-[0.98]">🏁 Encerrar pelada e abrir votação</button>
+            )}
+            {game.votacaoAberta && !game.mvp && (
+              <div className="space-y-3">
+                <div className="bg-amber-500/10 border border-amber-500/25 rounded-xl p-3">
+                  <p className="text-xs font-bold text-amber-300">📣 Votação aberta! Chama a galera pra votar na aba "Votação" (MVP, melhor goleiro e bola murcha).</p>
+                </div>
+                <button onClick={onApurarVotacao} className="w-full flex items-center justify-center gap-2 bg-emerald-600 text-white font-black py-3 rounded-xl text-sm transition-transform active:scale-[0.98]">✅ Apurar resultado e fechar votação</button>
+              </div>
+            )}
+            {game.mvp && (
+              <div className="bg-zinc-900 rounded-xl border border-white/10 p-3 space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <Star className="w-4 h-4 text-amber-500 shrink-0" />
+                  <span className="text-xs font-bold text-zinc-400">MVP:</span>
+                  <span className="text-sm font-bold text-zinc-100">{players.find(p => p.id === game.mvp)?.name}</span>
+                </div>
+                {game.melhorGoleiroId && (
+                  <div className="flex items-center gap-2">
+                    <Shield className="w-4 h-4 text-sky-400 shrink-0" />
+                    <span className="text-xs font-bold text-zinc-400">Melhor goleiro:</span>
+                    <span className="text-sm font-bold text-zinc-100">{players.find(p => p.id === game.melhorGoleiroId)?.name}</span>
+                  </div>
+                )}
               </div>
             )}
             <button onClick={msgSumula} className="w-full flex items-center justify-center gap-2 bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 font-bold py-2.5 rounded-xl text-sm transition-transform active:scale-[0.98]"><MessageCircle className="w-4 h-4" /> Mandar súmula no WhatsApp</button>
+            {game.mvp && <ZoeiraCard lines={generateZoeiras(game, players)} />}
             {players.map(p => {
               const s = game.stats[p.id] || {};
               const isGk = p.position === 'goleiro';
@@ -1416,7 +2009,7 @@ function StatField({ label, icon: Icon, value, onChange }) {
   );
 }
 
-function ElencoTab({ players, onAdd, onOpenEdit }) {
+function ElencoTab({ players, onAdd, onOpenEdit, onApprovePhoto, onRejectPhoto }) {
   const [name, setName] = useState('');
   const [position, setPosition] = useState('linha');
   const [search, setSearch] = useState('');
@@ -1434,9 +2027,25 @@ function ElencoTab({ players, onAdd, onOpenEdit }) {
   const linhaCount = players.filter(p => p.position !== 'goleiro').length;
   const golCount = players.filter(p => p.position === 'goleiro').length;
   const filtered = players.filter(p => p.name.toLowerCase().includes(search.toLowerCase()));
+  const pending = players.filter(p => p.fotoPendente);
 
   return (
     <div className="p-4">
+      {pending.length > 0 && (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-3 mb-4">
+          <p className="text-xs font-black text-amber-300 uppercase mb-2.5 flex items-center gap-1.5"><Camera className="w-3.5 h-3.5" /> Fotos aguardando aprovação ({pending.length})</p>
+          <div className="space-y-2">
+            {pending.map(p => (
+              <div key={p.id} className="flex items-center gap-2.5 bg-zinc-900/60 rounded-xl p-2">
+                <img src={p.fotoPendente} alt={p.name} className="w-12 h-12 rounded-full object-cover ring-2 ring-amber-400" />
+                <span className="flex-1 text-sm font-bold text-zinc-100 truncate">{p.name}</span>
+                <button onClick={() => onApprovePhoto(p.id)} className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center transition-transform active:scale-90"><Check className="w-4 h-4 text-white" /></button>
+                <button onClick={() => onRejectPhoto(p.id)} className="w-8 h-8 rounded-full bg-rose-600 flex items-center justify-center transition-transform active:scale-90"><X className="w-4 h-4 text-white" /></button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       {players.length > 0 && (
         <div className="flex gap-2 mb-4">
           <StatBox value={players.length} label="Jogadores" />
@@ -1519,7 +2128,7 @@ function RankingList({ list, valueKey, unit, onOpenCard, myId, showCrown }) {
   );
 }
 
-function Podium({ top3, onOpenCard }) {
+function Podium({ top3, onOpenCard, unit = 'pts' }) {
   if (top3.length === 0) return null;
   const [second, first, third] = [top3[1], top3[0], top3[2]];
   const slot = (r, place) => {
@@ -1528,7 +2137,7 @@ function Podium({ top3, onOpenCard }) {
     const medalColor = { 1: 'text-amber-400', 2: 'text-slate-300', 3: 'text-orange-400' };
     const barGrad = { 1: 'from-amber-400 to-amber-200', 2: 'from-slate-400 to-slate-200', 3: 'from-orange-400 to-orange-200' };
     return (
-      <button onClick={() => onOpenCard(r.player)} className="relative flex-1 flex flex-col items-center gap-1.5 transition-transform active:scale-95">
+      <button onClick={() => onOpenCard?.(r.player)} className="relative flex-1 flex flex-col items-center gap-1.5 transition-transform active:scale-95">
         {place === 1 && (
           <div className="absolute -mt-9 animate-bounce" style={{ animationDuration: '2.2s' }}>
             <Crown className="w-6 h-6 text-amber-400 drop-shadow-[0_0_6px_rgba(251,191,36,0.6)]" />
@@ -1542,7 +2151,7 @@ function Podium({ top3, onOpenCard }) {
           </div>
         </div>
         <span className={`font-bold text-zinc-100 truncate max-w-[80px] ${place === 1 ? 'text-sm' : 'text-[11px]'}`}>{r.player.name.split(' ')[0]}</span>
-        <span className={`font-black text-emerald-400 ${place === 1 ? 'text-base' : 'text-xs'}`}>{r.pts} pts</span>
+        <span className={`font-black text-emerald-400 ${place === 1 ? 'text-base' : 'text-xs'}`}>{r.pts} {unit}</span>
         <div className={`w-full ${heights[place]} rounded-t-xl bg-gradient-to-t ${barGrad[place]} relative flex items-start justify-center pt-1.5 shadow-lg ${place === 1 ? 'shadow-amber-900/50' : 'shadow-black/30'}`}>
           <span className="text-black/50 font-black text-xs">{place}º</span>
         </div>
@@ -1673,6 +2282,178 @@ function CompareModal({ players, ranking, onClose }) {
           )}
         </div>
         <button onClick={onClose} className="w-full bg-zinc-800 text-zinc-400 font-bold text-sm py-2.5">Fechar</button>
+      </div>
+    </div>
+  );
+}
+
+function BolaoCard({ label, icon: Icon, value, onChange, options, placeholder }) {
+  return (
+    <div>
+      <p className="text-xs font-bold text-zinc-400 uppercase mb-1.5 flex items-center gap-1.5"><Icon className="w-3.5 h-3.5 text-amber-400" /> {label}</p>
+      <select value={value} onChange={(e) => onChange(e.target.value)} className="w-full bg-zinc-800 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-zinc-100 outline-none focus:border-amber-500">
+        <option value="">{placeholder}</option>
+        {options.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+      </select>
+    </div>
+  );
+}
+
+function WhoAlreadyBet({ confirmados, palpites }) {
+  const apostaram = confirmados.filter(p => palpites?.[p.id]);
+  if (confirmados.length === 0) return null;
+  return (
+    <div className="flex items-center gap-2 bg-white/5 rounded-xl px-3 py-2.5">
+      <div className="flex -space-x-2 shrink-0">
+        {apostaram.slice(0, 5).map(p => <Avatar key={p.id} player={p} size="sm" />)}
+      </div>
+      <p className="text-[11px] font-semibold text-zinc-400 flex-1">
+        {apostaram.length === 0 ? 'Ninguém apostou ainda — seja o primeiro!' : `${apostaram.length} de ${confirmados.length} já apostaram`}
+      </p>
+    </div>
+  );
+}
+
+function BolaoResultCard({ game, players }) {
+  const res = resolveBolao(game, players);
+  if (!res) return null;
+  const { categorias } = bolaoPoolResult(game, players);
+  const nome = (id) => players.find(p => p.id === id)?.name || '?';
+  const nomes = (ids) => ids.map(nome).join(', ');
+  const catLine = (label, emoji, resultLabel, catKey) => {
+    const cat = categorias[catKey];
+    if (!cat || cat.pool === 0) return null;
+    return (
+      <div key={catKey}>
+        <p className="text-xs text-zinc-300">{emoji} {label}: <span className="font-bold text-zinc-100">{resultLabel}</span></p>
+        {cat.vencedores.length > 0 ? (
+          <p className="text-emerald-400 font-semibold text-[11px] mt-0.5">💰 Bolo de {cat.pool} moedas dividido entre {cat.vencedores.length}: {cat.share} moedas pra {cat.vencedores.map(nome).join(', ')}</p>
+        ) : (
+          <p className="text-rose-400 font-semibold text-[11px] mt-0.5">😬 Ninguém acertou — {cat.pool} moedas foram pro ralo</p>
+        )}
+      </div>
+    );
+  };
+  return (
+    <div className="bg-gradient-to-br from-amber-500/10 to-transparent border border-amber-500/20 rounded-2xl p-3.5 space-y-2.5">
+      <p className="text-[10px] font-black text-amber-300/80 uppercase">🏆 Resultado da pelada de {fmtDate(game.date)}</p>
+      {catLine('Artilheiro', '⚽', res.artilheiros.length ? nomes(res.artilheiros) : '-', 'artilheiro')}
+      {catLine('MVP', '👑', res.mvp ? nome(res.mvp) : '-', 'mvp')}
+      {res.frango && catLine('Levou frango', '🐔', res.frango.length ? nomes(res.frango) : '-', 'frango')}
+    </div>
+  );
+}
+
+function BolaoTab({ games, players, myId, onSetPalpite, onOpenCard }) {
+  const proximo = React.useMemo(() => {
+    const semResultado = games.filter(g => !g.mvp);
+    return [...semResultado].sort((a, b) => a.date.localeCompare(b.date))[0] || null;
+  }, [games]);
+
+  const ultimoResolvido = React.useMemo(() => {
+    const resolvidos = games.filter(g => g.mvp);
+    return [...resolvidos].sort((a, b) => b.date.localeCompare(a.date))[0] || null;
+  }, [games]);
+
+  const confirmados = proximo ? players.filter(p => proximo.rsvp[p.id] === 'sim') : [];
+  const linha = confirmados.filter(p => p.position !== 'goleiro');
+  const goleiros = confirmados.filter(p => p.position === 'goleiro');
+  const myPalpite = proximo?.palpites?.[myId];
+
+  const [form, setForm] = useState({ artilheiro: '', mvp: '', frango: '' });
+
+  const leaderboard = React.useMemo(() => {
+    return players
+      .map(p => ({ player: p, moedas: moedasAtuais(p, players, games) }))
+      .filter(r => r.moedas > 0)
+      .sort((a, b) => b.moedas - a.moedas);
+  }, [games, players]);
+
+  const minhasMoedasRaw = myId ? moedasAtuais(players.find(p => p.id === myId) || {}, players, games) : 0;
+  const minhasMoedas = useCountUp(Math.max(minhasMoedasRaw, 0), 900);
+  const top3 = leaderboard.slice(0, 3).map(r => ({ player: r.player, pts: r.moedas }));
+  const resto = leaderboard.slice(3);
+
+  const custoSelecionado = (form.artilheiro ? APOSTA_CUSTO.artilheiro : 0) + (form.mvp ? APOSTA_CUSTO.mvp : 0) + (form.frango ? APOSTA_CUSTO.frango : 0);
+  const saldoInsuficiente = custoSelecionado > minhasMoedasRaw;
+
+  const submit = () => {
+    if (custoSelecionado === 0 || saldoInsuficiente) return;
+    onSetPalpite(proximo.id, myId, form);
+  };
+
+  return (
+    <div className="p-4 space-y-5">
+      {myId && (
+        <div className="relative flex items-center gap-3 bg-gradient-to-br from-amber-500/20 via-amber-600/10 to-transparent border border-amber-500/30 rounded-2xl p-4 overflow-hidden">
+          <div className="absolute -right-6 -top-6 w-24 h-24 rounded-full bg-amber-400/15 blur-2xl" />
+          <div className="relative w-12 h-12 rounded-full bg-amber-500/25 flex items-center justify-center shrink-0 animate-pulse" style={{ animationDuration: '2.5s' }}>
+            <DollarSign className="w-6 h-6 text-amber-300" />
+          </div>
+          <div className="relative">
+            <p className="text-[10px] font-black text-amber-300/80 uppercase tracking-wide">Suas moedas</p>
+            <p className="text-3xl font-black text-amber-300 leading-none drop-shadow">{minhasMoedas}</p>
+          </div>
+        </div>
+      )}
+
+      {ultimoResolvido && <BolaoResultCard game={ultimoResolvido} players={players} />}
+
+      <div>
+        <p className="text-xs font-black text-zinc-400 uppercase mb-2 flex items-center gap-1.5"><Sparkles className="w-3.5 h-3.5 text-amber-400" /> 🔥 Palpite quente da vez</p>
+        {!proximo ? (
+          <EmptyState icon={Sparkles} text="Sem jogo aberto pro bolão agora" sub="Assim que tiver um jogo novo, dá pra palpitar aqui" />
+        ) : (
+          <div className="space-y-2.5">
+            <WhoAlreadyBet confirmados={confirmados} palpites={proximo.palpites} />
+            {!myId ? (
+              <div className="bg-zinc-900 rounded-2xl border border-white/10 p-4 text-center">
+                <p className="text-sm text-zinc-400">Escolha sua identidade (no cadeado 🔒) pra entrar na brincadeira!</p>
+              </div>
+            ) : myPalpite ? (
+              <div className="bg-amber-500/10 border border-amber-500/25 rounded-2xl p-4">
+                <p className="text-sm font-bold text-amber-300 mb-2">🍀 Aposta feita! Suas moedas já saíram do bolso:</p>
+                <div className="text-xs text-zinc-300 space-y-1">
+                  {myPalpite.artilheiro && <p>⚽ Artilheiro: <span className="font-bold">{players.find(p => p.id === myPalpite.artilheiro)?.name}</span> <span className="text-amber-400">(-{APOSTA_CUSTO.artilheiro})</span></p>}
+                  {myPalpite.mvp && <p>👑 MVP: <span className="font-bold">{players.find(p => p.id === myPalpite.mvp)?.name}</span> <span className="text-amber-400">(-{APOSTA_CUSTO.mvp})</span></p>}
+                  {myPalpite.frango && <p>🐔 Leva frango: <span className="font-bold">{players.find(p => p.id === myPalpite.frango)?.name}</span> <span className="text-amber-400">(-{APOSTA_CUSTO.frango})</span></p>}
+                </div>
+              </div>
+            ) : minhasMoedasRaw < APOSTA_CUSTO.frango ? (
+              <div className="bg-rose-500/10 border border-rose-500/25 rounded-2xl p-4 text-center">
+                <p className="text-sm font-bold text-rose-300">😬 Você zerou as moedas!</p>
+                <p className="text-xs text-zinc-400 mt-1">Joga a próxima pelada (ou ganha uma votação) pra recuperar e voltar a apostar.</p>
+              </div>
+            ) : (
+              <div className="bg-zinc-900 rounded-2xl border border-amber-500/20 p-4 space-y-3">
+                <p className="text-[11px] text-amber-300/80 font-bold">💰 É aposta de verdade: acerta e leva o bolo de quem errou. Errou, perde a moeda.</p>
+                <BolaoCard label={`Quem vai ser o artilheiro? (${APOSTA_CUSTO.artilheiro} moedas)`} icon={Target} value={form.artilheiro} onChange={(v) => setForm(f => ({ ...f, artilheiro: v }))} options={linha} placeholder="Escolher jogador" />
+                <BolaoCard label={`Quem vai ser o MVP? (${APOSTA_CUSTO.mvp} moedas)`} icon={Crown} value={form.mvp} onChange={(v) => setForm(f => ({ ...f, mvp: v }))} options={confirmados} placeholder="Escolher jogador" />
+                {goleiros.length > 1 && (
+                  <BolaoCard label={`Quem vai levar frango? (${APOSTA_CUSTO.frango} moeda) 🐔`} icon={Shield} value={form.frango} onChange={(v) => setForm(f => ({ ...f, frango: v }))} options={goleiros} placeholder="Escolher goleiro" />
+                )}
+                {custoSelecionado > 0 && (
+                  <p className={`text-xs font-bold ${saldoInsuficiente ? 'text-rose-400' : 'text-zinc-400'}`}>
+                    Custo total: {custoSelecionado} moedas {saldoInsuficiente && ` — você só tem ${minhasMoedasRaw}`}
+                  </p>
+                )}
+                <button onClick={submit} disabled={custoSelecionado === 0 || saldoInsuficiente} className="w-full bg-gradient-to-r from-amber-400 to-amber-500 text-black font-black text-sm py-3 rounded-xl transition-transform active:scale-95 shadow-lg shadow-amber-900/30 disabled:opacity-40 disabled:cursor-not-allowed">🔥 Confirmar aposta</button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div>
+        <p className="text-xs font-black text-zinc-400 uppercase mb-2 flex items-center gap-1.5"><DollarSign className="w-3.5 h-3.5 text-amber-400" /> Ranking de moedas</p>
+        {leaderboard.length === 0 ? (
+          <EmptyState icon={DollarSign} text="Ninguém ganhou moedas ainda" sub="Elas aparecem aqui conforme os jogos vão acontecendo" />
+        ) : (
+          <>
+            <Podium top3={top3} onOpenCard={onOpenCard} unit="moedas" />
+            {resto.length > 0 && <RankingList list={resto.map((r, i) => ({ player: r.player, moedas: r.moedas }))} valueKey="moedas" unit="moedas" onOpenCard={onOpenCard} myId={myId} />}
+          </>
+        )}
       </div>
     </div>
   );
