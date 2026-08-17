@@ -976,6 +976,16 @@ export default function PeladaApp() {
     setToast('Lançado no caixa do grupo!');
   });
 
+  const excluirLancamento = guard((entryId) => {
+    const entry = caixa.find(e => e.id === entryId);
+    if (!entry) return;
+    saveCaixa(caixa.filter(e => e.id !== entryId));
+    if (entry.tipo === 'auto' && entry.gameId) {
+      updateGame(entry.gameId, { caixaLancado: false });
+    }
+    setToast('Lançamento excluído.');
+  });
+
 
   const abrirVotacao = guard((gameId) => {
     saveGames(games.map(g => g.id === gameId ? { ...g, votacaoAberta: true } : g));
@@ -1183,6 +1193,7 @@ export default function PeladaApp() {
               onDelete={deleteGame} onUpdate={(patch) => updateGame(selectedGame.id, patch)} onSorteio={() => doSorteio(selectedGame.id)}
               onAbrirVotacao={() => abrirVotacao(selectedGame.id)} onApurarVotacao={() => apurarVotacao(selectedGame.id)}
               onFecharCaixa={(sobra) => fecharCaixaJogo(selectedGame.id, sobra)}
+              caixaEntry={caixa.find(e => e.gameId === selectedGame.id)} onDesfazerCaixa={excluirLancamento}
               myId={myId} onVoteMvp={voteMvp} onVoteGoleiro={voteGoleiro} onVoteEnquete={voteEnquete}
               send={send} />
           )}
@@ -1193,7 +1204,7 @@ export default function PeladaApp() {
           {tab === 'ranking' && <RankingTab ranking={ranking} onOpenCard={setCardPlayer} myId={myId} players={players} games={games} />}
           {tab === 'bolao' && <BolaoTab games={games} players={players} myId={myId} onSetPalpite={setPalpite} onOpenCard={setCardPlayer} />}
           {tab === 'votacao' && <VotacaoTab games={games} players={players} myId={myId} onVoteMvp={voteMvp} onVoteGoleiro={voteGoleiro} onVoteEnquete={voteEnquete} />}
-          {tab === 'financas' && <FinancasTab caixa={caixa} games={games} players={players} isOrganizer={isOrganizer} onLancar={lancarMovimentacao} onSetPayment={setPayment} />}
+          {tab === 'financas' && <FinancasTab caixa={caixa} games={games} players={players} isOrganizer={isOrganizer} onLancar={lancarMovimentacao} onSetPayment={setPayment} onExcluir={excluirLancamento} />}
         </div>
       </div>
 
@@ -1904,7 +1915,7 @@ function CircleProgress({ percent }) {
   );
 }
 
-function GameDetail({ game, players, subTab, setSubTab, onBack, onRSVP, onPay, onStat, onDelete, onUpdate, onSorteio, onAbrirVotacao, onApurarVotacao, onFecharCaixa, myId, onVoteMvp, onVoteGoleiro, onVoteEnquete, send }) {
+function GameDetail({ game, players, subTab, setSubTab, onBack, onRSVP, onPay, onStat, onDelete, onUpdate, onSorteio, onAbrirVotacao, onApurarVotacao, onFecharCaixa, caixaEntry, onDesfazerCaixa, myId, onVoteMvp, onVoteGoleiro, onVoteEnquete, send }) {
   const [formationView, setFormationView] = useState(true);
   const confirmados = players.filter(p => game.rsvp[p.id] === 'sim');
   const pendentes = players.filter(p => !game.rsvp[p.id]);
@@ -2107,9 +2118,16 @@ function GameDetail({ game, players, subTab, setSubTab, onBack, onRSVP, onPay, o
                     <span className="text-2xl font-black" style={{ color: sobra >= 0 ? PV6.green : '#f87171' }}>{sobra >= 0 ? '+' : '−'}R$ {Math.abs(sobra)}</span>
                   </div>
                   {game.caixaLancado ? (
+                    <>
                     <p className="text-[11px] text-zinc-500 text-center mt-3 flex items-center justify-center gap-1"><CheckCircle2 className="w-3.5 h-3.5" style={{ color: PV6.green }} /> Já lançado no caixa do grupo</p>
+                    {caixaEntry && (
+                      <button onClick={() => { if (confirm('Desfazer esse lançamento? Ele vai sumir do extrato e você poderá fechar o caixa dessa pelada de novo.')) onDesfazerCaixa(caixaEntry.id); }} className="w-full mt-2 py-2 text-[11.5px] font-bold flex items-center justify-center gap-1.5" style={{ borderRadius: 5, background: 'rgba(220,38,38,0.08)', color: '#f87171' }}>
+                        <Trash2 className="w-3.5 h-3.5" /> Desfazer lançamento
+                      </button>
+                    )}
+                    </>
                   ) : (
-                    <button onClick={() => onFecharCaixa(sobra)} className="w-full mt-3 py-2.5 text-[13px] font-black flex items-center justify-center gap-2 transition-transform active:scale-95" style={{ borderRadius: 5, background: `linear-gradient(135deg, ${PV6.green}, ${PV6.greenDark})`, color: '#05100a' }}>
+                    <button onClick={() => { if (confirm(`Confirmar? Isso vai lançar ${sobra >= 0 ? `+R$ ${sobra}` : `−R$ ${Math.abs(sobra)}`} no caixa do grupo. Dá pra desfazer depois na aba Finanças (excluindo a linha do extrato).`)) onFecharCaixa(sobra); }} className="w-full mt-3 py-2.5 text-[13px] font-black flex items-center justify-center gap-2 transition-transform active:scale-95" style={{ borderRadius: 5, background: `linear-gradient(135deg, ${PV6.green}, ${PV6.greenDark})`, color: '#05100a' }}>
                       <Check className="w-4 h-4" /> Confirmar e mandar pro caixa do grupo
                     </button>
                   )}
@@ -2711,7 +2729,7 @@ function BolaoTab({ games, players, myId, onSetPalpite, onOpenCard }) {
   );
 }
 
-function FinancasTab({ caixa, games, players, isOrganizer, onLancar, onSetPayment }) {
+function FinancasTab({ caixa, games, players, isOrganizer, onLancar, onSetPayment, onExcluir }) {
   const [showLancar, setShowLancar] = useState(false);
   const saldo = caixa.reduce((sum, e) => sum + (Number(e.valor) || 0), 0);
   const jogoAtual = games[0] || null;
@@ -2749,6 +2767,11 @@ function FinancasTab({ caixa, games, players, isOrganizer, onLancar, onSetPaymen
                     <p className="text-[10px] text-zinc-500 mt-0.5">{e.tipo === 'auto' ? 'Automático' : 'Lançado pelo organizador'}</p>
                   </div>
                   <span className="text-[13px] font-black shrink-0" style={{ color: e.valor >= 0 ? PV6.green : '#f87171' }}>{e.valor >= 0 ? '+' : '−'}R$ {Math.abs(e.valor)}</span>
+                  {isOrganizer && (
+                    <button onClick={() => { if (confirm(`Excluir "${e.desc}" do extrato? Isso ajusta o saldo do caixa.`)) onExcluir(e.id); }} className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-transform active:scale-90" style={{ background: 'rgba(220,38,38,0.10)' }}>
+                      <Trash2 className="w-3.5 h-3.5" style={{ color: '#f87171' }} />
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
