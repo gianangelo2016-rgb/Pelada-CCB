@@ -2779,9 +2779,23 @@ function FinancasTab({ caixa, games, players, isOrganizer, onLancar, onSetPaymen
         )}
       </div>
 
-      {jogoAtual && confirmados.length > 0 && (
+      {jogoAtual && confirmados.length > 0 && (() => {
+        const totalPago = confirmados.reduce((sum, p) => sum + (Number(jogoAtual.payments[p.id]) || 0), 0);
+        const totalEsperado = valorCombinado * confirmados.length;
+        const pctGeral = totalEsperado > 0 ? Math.min(100, (totalPago / totalEsperado) * 100) : 0;
+        return (
         <div>
-          <p className="text-xs font-black text-zinc-400 uppercase mb-2 flex items-center gap-1.5"><DollarSign className="w-3.5 h-3.5" style={{ color: PV6.gold }} /> Pagamentos — Pelada de {fmtDate(jogoAtual.date)}</p>
+          <div className="flex items-baseline justify-between mb-1.5">
+            <p className="text-xs font-black text-zinc-400 uppercase flex items-center gap-1.5"><DollarSign className="w-3.5 h-3.5" style={{ color: PV6.gold }} /> Pagamentos — {fmtDate(jogoAtual.date)}</p>
+            {totalEsperado > 0 && (
+              <p className="text-[12.5px] font-black"><span style={{ color: PV6.green }}>R$ {totalPago}</span><span className="text-zinc-500 font-semibold"> / R$ {totalEsperado}</span></p>
+            )}
+          </div>
+          {totalEsperado > 0 && (
+            <div className="h-[3px] rounded-full mb-2.5 overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
+              <div className="h-full rounded-full" style={{ width: `${pctGeral}%`, background: `linear-gradient(90deg, ${PV6.greenDark}, ${PV6.green})` }} />
+            </div>
+          )}
           <Panel color="gold" cutSize={14} innerStyle={{ padding: 0 }}>
             <div className="divide-y divide-white/5">
               {confirmados.map(p => {
@@ -2815,7 +2829,8 @@ function FinancasTab({ caixa, games, players, isOrganizer, onLancar, onSetPaymen
             </div>
           </Panel>
         </div>
-      )}
+        );
+      })()}
 
       {showLancar && <LancarMovimentacaoModal onClose={() => setShowLancar(false)} onConfirm={(desc, valor, tipo) => { onLancar(desc, valor, tipo); setShowLancar(false); }} />}
     </div>
