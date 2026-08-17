@@ -897,23 +897,6 @@ export default function PeladaApp() {
     if (!ok) setToast('Erro ao salvar caixa (confira sua internet)');
   };
 
-  const lancarMovimentacao = guard((desc, valor, tipo) => {
-    const v = Math.abs(Number(valor) || 0);
-    if (v === 0) return;
-    const entry = { id: uid(), desc, valor: tipo === 'saida' ? -v : v, tipo: 'manual', data: new Date().toISOString().slice(0, 10) };
-    saveCaixa([entry, ...caixa]);
-    setToast('Movimentação lançada!');
-  });
-
-  const fecharCaixaJogo = guard((gameId, sobraFinal) => {
-    const game = games.find(g => g.id === gameId);
-    if (!game || game.caixaLancado) return;
-    const entry = { id: uid(), desc: `Sobra da pelada de ${fmtDate(game.date)}`, valor: Number(sobraFinal) || 0, tipo: 'auto', gameId, data: game.date };
-    saveCaixa([entry, ...caixa]);
-    updateGame(gameId, { caixaLancado: true });
-    setToast('Lançado no caixa do grupo!');
-  });
-
   const unlockOrganizer = () => {
     setIsOrganizer(true);
     setTab('jogos');
@@ -975,6 +958,24 @@ export default function PeladaApp() {
   };
 
   const guard = (fn) => (...args) => { if (isOrganizer) fn(...args); };
+
+  const lancarMovimentacao = guard((desc, valor, tipo) => {
+    const v = Math.abs(Number(valor) || 0);
+    if (v === 0) return;
+    const entry = { id: uid(), desc, valor: tipo === 'saida' ? -v : v, tipo: 'manual', data: new Date().toISOString().slice(0, 10) };
+    saveCaixa([entry, ...caixa]);
+    setToast('Movimentação lançada!');
+  });
+
+  const fecharCaixaJogo = guard((gameId, sobraFinal) => {
+    const game = games.find(g => g.id === gameId);
+    if (!game || game.caixaLancado) return;
+    const entry = { id: uid(), desc: `Sobra da pelada de ${fmtDate(game.date)}`, valor: Number(sobraFinal) || 0, tipo: 'auto', gameId, data: game.date };
+    saveCaixa([entry, ...caixa]);
+    updateGame(gameId, { caixaLancado: true });
+    setToast('Lançado no caixa do grupo!');
+  });
+
 
   const abrirVotacao = guard((gameId) => {
     saveGames(games.map(g => g.id === gameId ? { ...g, votacaoAberta: true } : g));
