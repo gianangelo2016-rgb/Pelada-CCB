@@ -5,6 +5,37 @@ import { cloudGet, cloudSet, localGet, localSet } from './firebase';
 const uid = () => Math.random().toString(36).slice(2, 10);
 const genPin = () => String(Math.floor(1000 + Math.random() * 9000));
 
+const PREMIUM = {
+  black: '#050608',
+  blackBlue: '#080D16',
+  gold: '#F5C542',
+  goldDark: '#9C6B08',
+  white: '#F5F5F5',
+  purple: '#5146E5',
+  green: '#21D39B',
+  navy: '#07152A',
+};
+
+/* ---- v6 chamfered-panel design system (aprovado pelo usuário) ---- */
+const PV6 = {
+  gold: '#f5d576', goldDark: '#8a6a1f', goldGlow: 'rgba(212,175,55,0.55)',
+  green: '#3ee89b', greenDark: '#0f5132', greenGlow: 'rgba(16,185,129,0.55)',
+  blue: '#7dd3fc', blueDark: '#0c4a6e', blueGlow: 'rgba(56,189,248,0.55)',
+};
+const cutPoly = (n) => `polygon(${n}px 0, calc(100% - ${n}px) 0, 100% ${n}px, 100% calc(100% - ${n}px), calc(100% - ${n}px) 100%, ${n}px 100%, 0 calc(100% - ${n}px), 0 ${n}px)`;
+
+function Panel({ color = 'gold', cutSize = 16, className = '', style = {}, innerStyle = {}, children }) {
+  const c = PV6[color], cd = PV6[color + 'Dark'], glow = PV6[color + 'Glow'];
+  return (
+    <div className={className} style={{ position: 'relative', clipPath: cutPoly(cutSize + 2), background: `linear-gradient(135deg, ${c}, ${cd}, ${c}, ${cd})`, padding: 2, boxShadow: `0 0 0 1px ${glow}, 0 4px 18px -4px ${glow}`, ...style }}>
+      <div style={{ clipPath: cutPoly(cutSize), background: 'linear-gradient(160deg, rgba(18,21,27,0.9), rgba(11,14,19,0.94), rgba(16,19,26,0.9))', position: 'relative', overflow: 'hidden', height: '100%', ...innerStyle }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+
 const fmtDate = (iso) => {
   const d = new Date(iso + 'T12:00:00');
   return d.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' });
@@ -1314,35 +1345,6 @@ function AttrBar({ label, value }) {
   );
 }
 
-const PREMIUM = {
-  black: '#050608',
-  blackBlue: '#080D16',
-  gold: '#F5C542',
-  goldDark: '#9C6B08',
-  white: '#F5F5F5',
-  purple: '#5146E5',
-  green: '#21D39B',
-  navy: '#07152A',
-};
-
-/* ---- v6 chamfered-panel design system (aprovado pelo usuário) ---- */
-const PV6 = {
-  gold: '#f5d576', goldDark: '#8a6a1f', goldGlow: 'rgba(212,175,55,0.55)',
-  green: '#3ee89b', greenDark: '#0f5132', greenGlow: 'rgba(16,185,129,0.55)',
-  blue: '#7dd3fc', blueDark: '#0c4a6e', blueGlow: 'rgba(56,189,248,0.55)',
-};
-const cutPoly = (n) => `polygon(${n}px 0, calc(100% - ${n}px) 0, 100% ${n}px, 100% calc(100% - ${n}px), calc(100% - ${n}px) 100%, ${n}px 100%, 0 calc(100% - ${n}px), 0 ${n}px)`;
-
-function Panel({ color = 'gold', cutSize = 16, className = '', style = {}, innerStyle = {}, children }) {
-  const c = PV6[color], cd = PV6[color + 'Dark'], glow = PV6[color + 'Glow'];
-  return (
-    <div className={className} style={{ position: 'relative', clipPath: cutPoly(cutSize + 2), background: `linear-gradient(135deg, ${c}, ${cd}, ${c}, ${cd})`, padding: 2, boxShadow: `0 0 0 1px ${glow}, 0 4px 18px -4px ${glow}`, ...style }}>
-      <div style={{ clipPath: cutPoly(cutSize), background: 'linear-gradient(160deg, rgba(18,21,27,0.9), rgba(11,14,19,0.94), rgba(16,19,26,0.9))', position: 'relative', overflow: 'hidden', height: '100%', ...innerStyle }}>
-        {children}
-      </div>
-    </div>
-  );
-}
 
 
 function StatCell({ icon: Icon, value, label, color, glow }) {
