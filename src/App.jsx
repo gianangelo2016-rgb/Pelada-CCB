@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Calendar, Trophy, Check, X, DollarSign, Plus, Trash2, Shield, Target, MessageCircle, ChevronLeft, Loader2, Footprints, Award, Clock, Lock, Unlock, Camera, Shuffle, Star, Crown, KeyRound, Swords, TrendingDown, Medal, Flame, Share2, ArrowUp, Sparkles, CheckCircle2, Zap, Send, Rocket, Eye, Dumbbell, MapPin, Wind, Crosshair } from 'lucide-react';
+import { Users, Calendar, Trophy, Check, X, DollarSign, Plus, Trash2, Shield, Target, MessageCircle, ChevronLeft, Loader2, Footprints, Award, Clock, Lock, Unlock, Camera, Shuffle, Star, Crown, KeyRound, Swords, TrendingDown, Medal, Flame, Share2, ArrowUp, ArrowDown, Sparkles, CheckCircle2, Zap, Send, Rocket, Eye, Dumbbell, MapPin, Wind, Crosshair, Search, User, ChevronRight, Wallet, ShoppingCart } from 'lucide-react';
 import { cloudGet, cloudSet, localGet, localSet } from './firebase';
 
 const uid = () => Math.random().toString(36).slice(2, 10);
@@ -238,8 +238,8 @@ function VotingCard({ title, emoji, options, votes, myId, onVote, players }) {
 
   if (!myId || options.length === 0) return null;
   return (
-    <div className="bg-zinc-900 rounded-2xl border border-white/10 p-3.5">
-      <p className="text-xs font-black text-zinc-400 uppercase mb-2 flex items-center gap-1.5">{emoji} {title}</p>
+    <Panel color="gold" cutSize={14} innerStyle={{ padding: 14 }}>
+      <p className="text-xs font-black uppercase mb-2 flex items-center gap-1.5" style={{ color: PV6.gold }}>{emoji} {title}</p>
       {myVote ? (
         <div>
           <p className="text-xs text-zinc-400 mb-2">Você votou em <span className="font-bold text-zinc-100">{players.find(p => p.id === myVote)?.name}</span></p>
@@ -251,7 +251,7 @@ function VotingCard({ title, emoji, options, votes, myId, onVote, players }) {
                   <div key={pid}>
                     <div className="flex items-center gap-2 text-xs">
                       <span className="flex-1 text-zinc-300 truncate font-semibold">{players.find(p => p.id === pid)?.name}</span>
-                      <span className="font-bold text-amber-400">{count} voto{count > 1 ? 's' : ''}</span>
+                      <span className="font-bold" style={{ color: PV6.gold }}>{count} voto{count > 1 ? 's' : ''}</span>
                     </div>
                     {voters.length > 0 && <p className="text-[10px] text-zinc-500 mt-0.5">Votos de: {voters.join(', ')}</p>}
                   </div>
@@ -262,14 +262,14 @@ function VotingCard({ title, emoji, options, votes, myId, onVote, players }) {
         </div>
       ) : (
         <div className="flex gap-2">
-          <select value={choice} onChange={(e) => setChoice(e.target.value)} className="flex-1 bg-zinc-800 border border-white/10 rounded-lg px-2 py-2 text-xs text-zinc-100 outline-none">
-            <option value="">Escolher jogador</option>
-            {options.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+          <select value={choice} onChange={(e) => setChoice(e.target.value)} className="flex-1 bg-transparent px-2 py-2 text-xs text-zinc-100 outline-none" style={{ border: '1.5px solid rgba(255,255,255,0.14)', borderRadius: 4 }}>
+            <option value="" className="bg-zinc-900">Escolher jogador</option>
+            {options.map(p => <option key={p.id} value={p.id} className="bg-zinc-900">{p.name}</option>)}
           </select>
-          <button onClick={() => choice && onVote(choice)} className="px-3 bg-amber-500 text-black text-xs font-bold rounded-lg shrink-0">Votar</button>
+          <button onClick={() => choice && onVote(choice)} className="px-3.5 text-xs font-black shrink-0" style={{ borderRadius: 4, background: `linear-gradient(135deg, ${PV6.gold}, ${PV6.goldDark})`, color: '#050608' }}>Votar</button>
         </div>
       )}
-    </div>
+    </Panel>
   );
 }
 
@@ -295,14 +295,14 @@ function VotacaoResultCard({ game, players }) {
   let murchaWinner = null, max = 0;
   Object.entries(counts).forEach(([id, c]) => { if (c > max) { max = c; murchaWinner = id; } });
   return (
-    <div className="bg-zinc-900 rounded-2xl border border-white/10 p-3.5">
-      <p className="text-[10px] font-black text-zinc-500 uppercase mb-2">🏆 Resultado da pelada de {fmtDate(game.date)}</p>
+    <Panel color="gold" cutSize={14} innerStyle={{ padding: 14 }}>
+      <p className="text-[10px] font-black uppercase mb-2" style={{ color: PV6.gold, opacity: 0.85 }}>🏆 Resultado da pelada de {fmtDate(game.date)}</p>
       <div className="space-y-1 text-xs text-zinc-300">
         <p>👑 MVP: <span className="font-bold text-zinc-100">{nome(game.mvp)}</span></p>
         {game.melhorGoleiroId && <p>🧤 Melhor goleiro: <span className="font-bold text-zinc-100">{nome(game.melhorGoleiroId)}</span></p>}
         {murchaWinner && <p>🥔 Bola murcha: <span className="font-bold text-zinc-100">{nome(murchaWinner)}</span></p>}
       </div>
-    </div>
+    </Panel>
   );
 }
 
@@ -316,13 +316,13 @@ function VotacaoTab({ games, players, myId, onVoteMvp, onVoteGoleiro, onVoteEnqu
   return (
     <div className="p-4 space-y-5">
       <div>
-        <p className="text-xs font-black text-zinc-400 uppercase mb-2 flex items-center gap-1.5"><Medal className="w-3.5 h-3.5 text-amber-400" /> Votação da pelada</p>
+        <p className="text-xs font-black text-zinc-400 uppercase mb-2 flex items-center gap-1.5"><Medal className="w-3.5 h-3.5" style={{ color: PV6.gold }} /> Votação da pelada</p>
         {!aberto ? (
           <EmptyState icon={Medal} text="Nenhuma votação aberta agora" sub="Assim que o organizador encerrar um jogo, a votação aparece aqui" />
         ) : !myId ? (
-          <div className="bg-zinc-900 rounded-2xl border border-white/10 p-4 text-center">
+          <Panel color="gold" cutSize={14} innerStyle={{ padding: 16, textAlign: 'center' }}>
             <p className="text-sm text-zinc-400">Escolha sua identidade (no cadeado 🔒) pra votar.</p>
-          </div>
+          </Panel>
         ) : (
           <div className="space-y-2.5">
             <p className="text-[11px] text-zinc-500">Pelada de {fmtDate(aberto.date)}</p>
@@ -809,6 +809,7 @@ export default function PeladaApp() {
   const [players, setPlayers] = useState([]);
   const [games, setGames] = useState([]);
   const [config, setConfig] = useState({ pin: null });
+  const [caixa, setCaixa] = useState([]);
   const [isOrganizer, setIsOrganizer] = useState(false);
   const [myId, setMyId] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -829,13 +830,14 @@ export default function PeladaApp() {
 
   const loadAll = async () => {
     setLoading(true);
-    const [pv, gv, cv] = await Promise.all([cloudGet('players'), cloudGet('games'), cloudGet('config')]);
+    const [pv, gv, cv, xv] = await Promise.all([cloudGet('players'), cloudGet('games'), cloudGet('config'), cloudGet('caixa')]);
     const p = pv ? JSON.parse(pv) : [];
     const g = gv ? JSON.parse(gv) : [];
     const c = cv ? JSON.parse(cv) : { pin: null };
+    const x = xv ? JSON.parse(xv) : [];
     const unlocked = localGet('pelada_organizer_unlocked') === 'true';
     const identity = localGet('pelada_my_identity') || null;
-    setPlayers(p); setGames(g); setConfig(c); setIsOrganizer(unlocked); setMyId(identity);
+    setPlayers(p); setGames(g); setConfig(c); setCaixa(x); setIsOrganizer(unlocked); setMyId(identity);
     setTab(unlocked ? 'jogos' : 'ranking');
     setLoading(false);
   };
@@ -857,6 +859,29 @@ export default function PeladaApp() {
     const ok = await cloudSet('config', JSON.stringify(next));
     if (!ok) setToast('Erro ao salvar');
   };
+
+  const saveCaixa = async (next) => {
+    setCaixa(next);
+    const ok = await cloudSet('caixa', JSON.stringify(next));
+    if (!ok) setToast('Erro ao salvar caixa (confira sua internet)');
+  };
+
+  const lancarMovimentacao = guard((desc, valor, tipo) => {
+    const v = Math.abs(Number(valor) || 0);
+    if (v === 0) return;
+    const entry = { id: uid(), desc, valor: tipo === 'saida' ? -v : v, tipo: 'manual', data: new Date().toISOString().slice(0, 10) };
+    saveCaixa([entry, ...caixa]);
+    setToast('Movimentação lançada!');
+  });
+
+  const fecharCaixaJogo = guard((gameId, sobraFinal) => {
+    const game = games.find(g => g.id === gameId);
+    if (!game || game.caixaLancado) return;
+    const entry = { id: uid(), desc: `Sobra da pelada de ${fmtDate(game.date)}`, valor: Number(sobraFinal) || 0, tipo: 'auto', gameId, data: game.date };
+    saveCaixa([entry, ...caixa]);
+    updateGame(gameId, { caixaLancado: true });
+    setToast('Lançado no caixa do grupo!');
+  });
 
   const unlockOrganizer = () => {
     setIsOrganizer(true);
@@ -963,7 +988,7 @@ export default function PeladaApp() {
 
   const createGame = guard(() => {
     const iso = new Date().toISOString().slice(0, 10);
-    const game = { id: uid(), date: iso, horario: '10:00', local: '', rsvp: {}, payments: {}, valor: '', teams: null, mvp: null, melhorGoleiroId: null, votacaoAberta: false, votosMvp: {}, votosGoleiro: {}, stats: {}, palpites: {}, enquete: {} };
+    const game = { id: uid(), date: iso, horario: '10:00', local: '', rsvp: {}, payments: {}, valor: '', valorQuadra30: '', duracaoMin: 60, caixaLancado: false, teams: null, mvp: null, melhorGoleiroId: null, votacaoAberta: false, votosMvp: {}, votosGoleiro: {}, stats: {}, palpites: {}, enquete: {} };
     saveGames([game, ...games]);
     setSelectedGameId(game.id);
     setGameSubTab('presenca');
@@ -978,9 +1003,9 @@ export default function PeladaApp() {
     updateGame(gameId, { rsvp: { ...game.rsvp, [playerId]: status } });
   });
 
-  const togglePayment = guard((gameId, playerId) => {
+  const setPayment = guard((gameId, playerId, valor) => {
     const game = games.find(g => g.id === gameId);
-    updateGame(gameId, { payments: { ...game.payments, [playerId]: !game.payments[playerId] } });
+    updateGame(gameId, { payments: { ...game.payments, [playerId]: valor } });
   });
 
   const setStat = guard((gameId, playerId, field, value) => {
@@ -1076,31 +1101,43 @@ export default function PeladaApp() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundImage: "url('/bg-pelada.jpg')", backgroundSize: 'cover', backgroundPosition: 'top center', backgroundRepeat: 'no-repeat', backgroundAttachment: 'fixed' }}>
-      <div className="bg-gradient-to-br from-black via-emerald-950 to-zinc-900 text-white px-4 pt-6 pb-4 relative overflow-hidden shrink-0 border-b border-emerald-500/10">
-        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'repeating-linear-gradient(90deg, transparent, transparent 38px, white 38px, white 40px)' }} />
-        <div className="absolute -right-10 -top-16 w-40 h-40 rounded-full bg-emerald-500/10 blur-2xl" />
-        <div className="absolute right-2 top-2 text-6xl opacity-10 select-none pointer-events-none">⚽</div>
-        <div className="relative flex items-center justify-between">
-          <div>
-            <p className="text-emerald-400 text-[11px] font-bold tracking-widest uppercase">{isOrganizer ? 'Modo organizador' : me ? `Olá, ${me.name.split(' ')[0]}` : 'Modo visualização'}</p>
-            <h1 className="text-2xl font-black tracking-tight flex items-center gap-1.5">Racha do Grupo ⚽</h1>
+      <div className="relative overflow-hidden" style={{ background: 'linear-gradient(180deg, rgba(3,5,8,0.15) 0%, rgba(3,5,8,0.35) 100%)' }}>
+      <div className="px-3 pt-3 shrink-0">
+      <Panel color="gold" cutSize={18}>
+        <div className="relative flex items-center justify-between px-4 py-3.5 min-h-[86px]">
+          <span className="absolute left-0 top-3.5 bottom-3.5 w-1" style={{ background: 'repeating-linear-gradient(180deg, #10b981 0 6px, transparent 6px 11px)' }} />
+          <div className="pl-3.5">
+            <p className="text-[10px] font-black tracking-[0.25em] uppercase flex items-center gap-1.5" style={{ color: PV6.green }}>
+              {isOrganizer ? 'Modo organizador' : me ? `Olá, ${me.name.split(' ')[0]}` : 'Modo visualização'}
+            </p>
+            <div className="flex items-baseline gap-2 mt-0.5">
+              <h1 className="text-[22px] font-black tracking-tight leading-none whitespace-nowrap text-white">RACHA DO GRUPO</h1>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="shrink-0">
+                <circle cx="12" cy="12" r="10" fill="#F5F5F5" stroke={PV6.gold} strokeWidth="1.5" />
+                <path d="M12 7l3.5 2.5-1.3 4.1H9.8L8.5 9.5z" fill="#0a0a0a" />
+              </svg>
+            </div>
           </div>
-          <button onClick={() => isOrganizer ? lockOrganizer() : setPinModal(true)} className="w-11 h-11 rounded-full border-2 border-emerald-500/40 bg-emerald-500/10 flex items-center justify-center transition-transform active:scale-90">
-            {isOrganizer ? <Unlock className="w-5 h-5 text-emerald-400" /> : <Lock className="w-5 h-5 text-emerald-400" />}
+          <button onClick={() => isOrganizer ? lockOrganizer() : setPinModal(true)} className="relative w-12 h-12 rounded-full flex items-center justify-center shrink-0 transition-transform active:scale-90" style={{ background: `conic-gradient(from 180deg, ${PV6.green}, ${PV6.greenDark}, ${PV6.green}, ${PV6.greenDark}, ${PV6.green})`, boxShadow: `0 0 16px 1px ${PV6.greenGlow}`, padding: 3 }}>
+            <span className="w-full h-full rounded-full flex items-center justify-center" style={{ background: '#0a0f0c' }}>
+              {isOrganizer ? <Unlock className="w-4 h-4" style={{ color: PV6.green }} /> : <Lock className="w-4 h-4" style={{ color: PV6.green }} />}
+            </span>
           </button>
         </div>
+      </Panel>
         {!isOrganizer && me && (
-          <div className="relative mt-2 flex items-center gap-3 flex-wrap">
-            <button onClick={clearIdentity} className="text-[11px] text-emerald-400 font-semibold underline">Trocar identidade</button>
-            <label className="text-[11px] text-emerald-400 font-semibold underline cursor-pointer">
+          <div className="relative mt-2 flex items-center gap-3 flex-wrap px-1">
+            <button onClick={clearIdentity} className="text-[11px] font-semibold underline" style={{ color: PV6.green }}>Trocar identidade</button>
+            <label className="text-[11px] font-semibold underline cursor-pointer" style={{ color: PV6.green }}>
               Trocar minha foto
               <input type="file" accept="image/*" className="hidden" onChange={(e) => updateMyPhoto(e.target.files[0])} />
             </label>
             {me.fotoPendente && (
-              <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full">Foto aguardando aprovação</span>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ color: PV6.gold, background: `${PV6.gold}1a` }}>Foto aguardando aprovação</span>
             )}
           </div>
         )}
+      </div>
       </div>
 
       <div className="flex-1 overflow-y-auto pb-24">
@@ -1110,9 +1147,10 @@ export default function PeladaApp() {
           )}
           {tab === 'jogos' && isOrganizer && selectedGame && (
             <GameDetail game={selectedGame} players={players} subTab={gameSubTab} setSubTab={setGameSubTab}
-              onBack={() => setSelectedGameId(null)} onRSVP={setRSVP} onPay={togglePayment} onStat={setStat}
+              onBack={() => setSelectedGameId(null)} onRSVP={setRSVP} onPay={setPayment} onStat={setStat}
               onDelete={deleteGame} onUpdate={(patch) => updateGame(selectedGame.id, patch)} onSorteio={() => doSorteio(selectedGame.id)}
               onAbrirVotacao={() => abrirVotacao(selectedGame.id)} onApurarVotacao={() => apurarVotacao(selectedGame.id)}
+              onFecharCaixa={(sobra) => fecharCaixaJogo(selectedGame.id, sobra)}
               myId={myId} onVoteMvp={voteMvp} onVoteGoleiro={voteGoleiro} onVoteEnquete={voteEnquete}
               send={send} />
           )}
@@ -1123,6 +1161,7 @@ export default function PeladaApp() {
           {tab === 'ranking' && <RankingTab ranking={ranking} onOpenCard={setCardPlayer} myId={myId} players={players} games={games} />}
           {tab === 'bolao' && <BolaoTab games={games} players={players} myId={myId} onSetPalpite={setPalpite} onOpenCard={setCardPlayer} />}
           {tab === 'votacao' && <VotacaoTab games={games} players={players} myId={myId} onVoteMvp={voteMvp} onVoteGoleiro={voteGoleiro} onVoteEnquete={voteEnquete} />}
+          {tab === 'financas' && <FinancasTab caixa={caixa} games={games} players={players} isOrganizer={isOrganizer} onLancar={lancarMovimentacao} onSetPayment={setPayment} />}
         </div>
       </div>
 
@@ -1140,13 +1179,14 @@ export default function PeladaApp() {
           onSave={(form) => updatePlayer(editPlayer.id, form)} onDelete={removePlayer} />
       )}
 
-      <div className="fixed bottom-0 left-0 right-0 bg-zinc-900 border-t border-white/10 flex justify-around items-center py-2 px-2 max-w-lg mx-auto">
+      <div className="fixed bottom-0 left-0 right-0 flex justify-around items-end px-2 pt-2" style={{ background: 'linear-gradient(180deg, rgba(6,10,16,0.15), rgba(5,7,12,0.75) 60%, rgba(5,7,12,0.92))', paddingBottom: 'max(8px, env(safe-area-inset-bottom))' }}>
         {isOrganizer ? (
           <>
             <NavBtn icon={Calendar} label="Jogos" active={tab === 'jogos'} onClick={() => { setTab('jogos'); setSelectedGameId(null); }} />
             <NavBtn icon={Users} label="Elenco" active={tab === 'elenco'} onClick={() => setTab('elenco')} />
             <NavBtn icon={Medal} label="Votação" active={tab === 'votacao'} onClick={() => setTab('votacao')} />
             <NavBtn icon={Sparkles} label="Bolão" active={tab === 'bolao'} onClick={() => setTab('bolao')} />
+            <NavBtn icon={Wallet} label="Finanças" active={tab === 'financas'} onClick={() => setTab('financas')} />
             <NavBtn icon={Trophy} label="Ranking" active={tab === 'ranking'} onClick={() => setTab('ranking')} />
           </>
         ) : (
@@ -1154,6 +1194,7 @@ export default function PeladaApp() {
             <NavBtn icon={Trophy} label="Ranking" active={tab === 'ranking'} onClick={() => setTab('ranking')} />
             <NavBtn icon={Medal} label="Votação" active={tab === 'votacao'} onClick={() => setTab('votacao')} />
             <NavBtn icon={Sparkles} label="Bolão" active={tab === 'bolao'} onClick={() => setTab('bolao')} />
+            <NavBtn icon={Wallet} label="Finanças" active={tab === 'financas'} onClick={() => setTab('financas')} />
             <NavBtn icon={Calendar} label="Jogos" active={tab === 'jogos'} onClick={() => setTab('jogos')} />
           </>
         )}
@@ -1164,9 +1205,15 @@ export default function PeladaApp() {
 
 function NavBtn({ icon: Icon, label, active, onClick }) {
   return (
-    <button onClick={onClick} className={`flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-2xl transition-all duration-200 active:scale-90 ${active ? 'text-emerald-400 bg-emerald-500/10' : 'text-zinc-500'}`}>
-      <Icon className="w-5 h-5" strokeWidth={active ? 2.5 : 2} />
-      <span className="text-[11px] font-semibold">{label}</span>
+    <button onClick={onClick} className="flex flex-col items-center gap-0.5 px-1.5 pb-2 transition-all duration-200 active:scale-90 flex-1 min-w-0"
+      style={active ? {
+        color: PV6.green, marginTop: -14, paddingTop: 14,
+        background: 'linear-gradient(180deg, rgba(16,185,129,0.20), rgba(16,185,129,0.04))',
+        clipPath: 'polygon(10px 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%, 0 10px)',
+        border: `1px solid ${PV6.greenGlow}`, boxShadow: `0 -4px 16px -4px ${PV6.greenGlow}`
+      } : { color: '#6b7280' }}>
+      <Icon className="w-[18px] h-[18px]" strokeWidth={active ? 2.5 : 2} />
+      <span className="text-[9px] font-bold tracking-wide whitespace-nowrap">{label}</span>
     </button>
   );
 }
@@ -1182,22 +1229,26 @@ function IdentityScreen({ players, onVerified, onOrganizerClick, setToast }) {
     onVerified(p.id);
   };
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-950 via-black to-black flex items-center justify-center p-6 relative overflow-hidden">
-      <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'repeating-linear-gradient(90deg, transparent, transparent 38px, white 38px, white 40px)' }} />
-      <div className="relative bg-zinc-900 border border-white/10 rounded-3xl p-6 w-full max-w-xs shadow-2xl shadow-black/60 animate-[popin_0.22s_ease-out]">
-        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-emerald-900/50">
-          <Shield className="w-7 h-7 text-white" />
+    <div className="min-h-screen flex items-center justify-center p-6 relative overflow-hidden" style={{ backgroundImage: "url('/bg-pelada.jpg')", backgroundSize: 'cover', backgroundPosition: 'top center', backgroundRepeat: 'no-repeat' }}>
+      <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(3,5,8,0.35), rgba(3,5,8,0.65))' }} />
+      <div className="relative w-full max-w-xs animate-[popin_0.22s_ease-out]">
+      <Panel color="gold" cutSize={18} innerStyle={{ padding: 22 }}>
+        <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: `conic-gradient(from 180deg, ${PV6.green}, ${PV6.greenDark}, ${PV6.green}, ${PV6.greenDark}, ${PV6.green})`, boxShadow: `0 0 18px 1px ${PV6.greenGlow}`, padding: 3 }}>
+          <div className="w-full h-full rounded-full flex items-center justify-center" style={{ background: '#0a0f0c' }}>
+            <Shield className="w-6 h-6" style={{ color: PV6.green }} />
+          </div>
         </div>
         <h2 className="font-black text-lg text-white mb-1 text-center">Quem é você?</h2>
         <p className="text-xs text-zinc-500 mb-4 text-center">Escolha seu nome e digite o PIN que o organizador te passou.</p>
-        <select value={selected} onChange={(e) => setSelected(e.target.value)} className="w-full bg-zinc-800 border border-white/10 rounded-xl px-3 py-2.5 text-sm mb-2 outline-none text-zinc-100 focus:border-emerald-500 transition-colors">
-          <option value="">Selecione seu nome...</option>
-          {players.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+        <select value={selected} onChange={(e) => setSelected(e.target.value)} className="w-full bg-transparent px-3 py-2.5 text-sm mb-2 outline-none text-zinc-100" style={{ border: '1.5px solid rgba(255,255,255,0.14)', borderRadius: 4 }}>
+          <option value="" className="bg-zinc-900">Selecione seu nome...</option>
+          {players.map(p => <option key={p.id} value={p.id} className="bg-zinc-900">{p.name}</option>)}
         </select>
         <input type="tel" inputMode="numeric" maxLength={4} value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} placeholder="PIN"
-          className="w-full text-center tracking-[0.3em] text-lg font-bold bg-zinc-800 border border-white/10 rounded-xl px-3 py-2.5 mb-3 outline-none focus:border-emerald-500 transition-colors text-white" />
-        <button onClick={submit} className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-black py-3 rounded-xl text-sm mb-3 shadow-lg shadow-emerald-950/50 transition-transform active:scale-95">Entrar</button>
+          className="w-full text-center tracking-[0.3em] text-lg font-bold bg-transparent px-3 py-2.5 mb-3 outline-none text-white" style={{ border: '1.5px solid rgba(255,255,255,0.14)', borderRadius: 4 }} />
+        <button onClick={submit} className="w-full font-black py-3 text-sm mb-3 transition-transform active:scale-95" style={{ borderRadius: 5, background: `linear-gradient(135deg, ${PV6.green}, ${PV6.greenDark})`, color: '#05100a', boxShadow: `0 0 16px -2px ${PV6.greenGlow}` }}>Entrar</button>
         <button onClick={onOrganizerClick} className="w-full text-center text-xs text-zinc-500 font-semibold">Sou o organizador</button>
+      </Panel>
       </div>
     </div>
   );
@@ -1208,19 +1259,23 @@ function PinModal({ config, onClose, onSetPin, onSubmitPin }) {
   const isNew = !config.pin;
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-40 p-6 animate-[fadein_0.2s_ease-out]" onClick={onClose}>
-      <div className="bg-zinc-900 border border-white/10 rounded-3xl p-6 w-full max-w-xs shadow-2xl animate-[popin_0.22s_ease-out]" onClick={(e) => e.stopPropagation()}>
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center mx-auto mb-3">
-          <KeyRound className="w-6 h-6 text-white" />
+      <div className="w-full max-w-xs animate-[popin_0.22s_ease-out]" onClick={(e) => e.stopPropagation()}>
+      <Panel color="gold" cutSize={16} innerStyle={{ padding: 20 }}>
+        <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3" style={{ background: `conic-gradient(from 180deg, ${PV6.green}, ${PV6.greenDark}, ${PV6.green}, ${PV6.greenDark}, ${PV6.green})`, padding: 3 }}>
+          <div className="w-full h-full rounded-full flex items-center justify-center" style={{ background: '#0a0f0c' }}>
+            <KeyRound className="w-5 h-5" style={{ color: PV6.green }} />
+          </div>
         </div>
         <h3 className="font-black text-white mb-1 text-center">{isNew ? 'Criar senha de organizador' : 'Entrar como organizador'}</h3>
         <p className="text-xs text-zinc-500 mb-4 text-center">{isNew ? 'Só quem tiver essa senha poderá alterar dados do app.' : 'Digite a senha do organizador.'}</p>
         <input type="tel" inputMode="numeric" maxLength={6} value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
           placeholder="Senha (números)" autoFocus
-          className="w-full text-center tracking-[0.3em] text-lg font-bold bg-zinc-800 border border-white/10 rounded-xl px-3 py-2.5 mb-3 outline-none focus:border-emerald-500 transition-colors text-white" />
+          className="w-full text-center tracking-[0.3em] text-lg font-bold bg-transparent px-3 py-2.5 mb-3 outline-none text-white" style={{ border: '1.5px solid rgba(255,255,255,0.14)', borderRadius: 4 }} />
         <div className="flex gap-2">
-          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl text-sm font-bold text-zinc-400 bg-zinc-800 transition-transform active:scale-95">Cancelar</button>
-          <button onClick={() => pin && (isNew ? onSetPin(pin) : onSubmitPin(pin))} className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-emerald-500 to-emerald-600 shadow-md shadow-emerald-950/40 transition-transform active:scale-95">{isNew ? 'Criar' : 'Entrar'}</button>
+          <button onClick={onClose} className="flex-1 py-2.5 text-sm font-bold text-zinc-400 transition-transform active:scale-95" style={{ borderRadius: 5, background: 'rgba(255,255,255,0.03)', border: '1.5px solid rgba(255,255,255,0.15)' }}>Cancelar</button>
+          <button onClick={() => pin && (isNew ? onSetPin(pin) : onSubmitPin(pin))} className="flex-1 py-2.5 text-sm font-bold transition-transform active:scale-95" style={{ borderRadius: 5, background: `linear-gradient(135deg, ${PV6.green}, ${PV6.greenDark})`, color: '#05100a', boxShadow: `0 0 14px -2px ${PV6.greenGlow}` }}>{isNew ? 'Criar' : 'Entrar'}</button>
         </div>
+      </Panel>
       </div>
     </div>
   );
@@ -1269,6 +1324,26 @@ const PREMIUM = {
   green: '#21D39B',
   navy: '#07152A',
 };
+
+/* ---- v6 chamfered-panel design system (aprovado pelo usuário) ---- */
+const PV6 = {
+  gold: '#f5d576', goldDark: '#8a6a1f', goldGlow: 'rgba(212,175,55,0.55)',
+  green: '#3ee89b', greenDark: '#0f5132', greenGlow: 'rgba(16,185,129,0.55)',
+  blue: '#7dd3fc', blueDark: '#0c4a6e', blueGlow: 'rgba(56,189,248,0.55)',
+};
+const cutPoly = (n) => `polygon(${n}px 0, calc(100% - ${n}px) 0, 100% ${n}px, 100% calc(100% - ${n}px), calc(100% - ${n}px) 100%, ${n}px 100%, 0 calc(100% - ${n}px), 0 ${n}px)`;
+
+function Panel({ color = 'gold', cutSize = 16, className = '', style = {}, innerStyle = {}, children }) {
+  const c = PV6[color], cd = PV6[color + 'Dark'], glow = PV6[color + 'Glow'];
+  return (
+    <div className={className} style={{ position: 'relative', clipPath: cutPoly(cutSize + 2), background: `linear-gradient(135deg, ${c}, ${cd}, ${c}, ${cd})`, padding: 2, boxShadow: `0 0 0 1px ${glow}, 0 4px 18px -4px ${glow}`, ...style }}>
+      <div style={{ clipPath: cutPoly(cutSize), background: 'linear-gradient(160deg, rgba(18,21,27,0.9), rgba(11,14,19,0.94), rgba(16,19,26,0.9))', position: 'relative', overflow: 'hidden', height: '100%', ...innerStyle }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
 
 function StatCell({ icon: Icon, value, label, color, glow }) {
   const display = useCountUp(value);
@@ -1426,7 +1501,7 @@ function PlayerEditModal({ player, onClose, onSave, onDelete }) {
   const [form, setForm] = useState({ ...player, attrs: { ...defaultAttrs(player.position), ...player.attrs } });
   const attrs = attrsFor(form.position);
   const overall = Math.round(attrs.map(a => Number(form.attrs[a.key]) || 50).reduce((x, y) => x + y, 0) / attrs.length);
-  const tier = cardTier(overall);
+  const posColor = form.position === 'goleiro' ? 'blue' : 'green';
 
   const handlePhoto = async (file) => {
     if (!file) return;
@@ -1434,62 +1509,93 @@ function PlayerEditModal({ player, onClose, onSave, onDelete }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-40" onClick={onClose}>
-      <div className="bg-zinc-900 w-full sm:max-w-sm sm:rounded-3xl rounded-t-3xl max-h-[92vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-        <div className={`bg-gradient-to-br ${tier.grad} p-4`}>
-          <div className="flex items-center gap-3 mb-2">
-            <label className="relative cursor-pointer">
-              <Avatar player={form} size="lg" />
-              <span className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-600 rounded-full flex items-center justify-center">
-                <Camera className="w-3 h-3 text-white" />
+    <div className="fixed inset-0 bg-black/70 flex items-end sm:items-center justify-center z-40 p-0 sm:p-4" onClick={onClose}>
+      <div className="w-full sm:max-w-sm max-h-[94vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <Panel color={posColor} cutSize={18} innerStyle={{ padding: '20px 18px' }}>
+          <div className="flex items-start gap-4 mb-4">
+            <div className="relative shrink-0 w-[92px] h-[92px]">
+              <label className="block w-full h-full rounded-full p-1 cursor-pointer" style={{ background: `conic-gradient(from 180deg, ${PV6[posColor]}, ${PV6[posColor + 'Dark']}, ${PV6[posColor]}, ${PV6[posColor + 'Dark']}, ${PV6[posColor]})`, boxShadow: `0 0 22px -2px ${PV6[posColor + 'Glow']}` }}>
+                <Avatar player={form} size="lg" />
+                <input type="file" accept="image/*" className="hidden" onChange={(e) => handlePhoto(e.target.files[0])} />
+              </label>
+              <span className="absolute bottom-0 left-0 w-7 h-7 rounded-full flex items-center justify-center" style={{ background: PV6[posColor + 'Dark'], border: '2px solid #05070c' }}>
+                {form.position === 'goleiro' ? <Shield className="w-3.5 h-3.5" style={{ color: PV6.blue }} /> : <Footprints className="w-3.5 h-3.5" style={{ color: PV6.green }} />}
               </span>
-              <input type="file" accept="image/*" className="hidden" onChange={(e) => handlePhoto(e.target.files[0])} />
-            </label>
-            <div>
-              <p className={`text-2xl font-black leading-none ${tier.text}`}>{overall}</p>
-              <p className={`text-[10px] font-bold uppercase ${tier.accent}`}>Overall</p>
+              <span className="absolute bottom-0 right-0 w-6 h-6 rounded-full flex items-center justify-center" style={{ background: '#0c0f14', border: '1.5px solid #444' }}>
+                <Camera className="w-3 h-3 text-zinc-300" />
+              </span>
+            </div>
+            <div className="flex-1 min-w-0 pt-1">
+              <input value={form.name} onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))} className="bg-transparent text-[21px] font-black outline-none w-full text-white truncate" />
+              <p className="text-[14px] font-bold mt-0.5 flex items-center gap-1.5" style={{ color: PV6[posColor] }}>
+                {form.position === 'goleiro' ? <Shield className="w-3.5 h-3.5" /> : <Footprints className="w-3.5 h-3.5" />}
+                {form.position === 'goleiro' ? 'GOLEIRO' : 'LINHA'} · #{form.numero}
+              </p>
               {form.foto && (
-                <button onClick={() => setForm(f => ({ ...f, foto: null }))} className={`text-[10px] font-bold underline mt-1 ${tier.accent}`}>Remover foto</button>
+                <button onClick={() => setForm(f => ({ ...f, foto: null }))} className="text-[11px] font-semibold underline mt-1.5" style={{ color: PV6[posColor] }}>Remover foto</button>
               )}
             </div>
-          </div>
-          <input value={form.name} onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))} className={`bg-transparent text-lg font-black outline-none w-full ${tier.text}`} />
-        </div>
-        <div className="p-4 space-y-3">
-          <div className="flex gap-2">
-            <button onClick={() => setForm(f => ({ ...f, position: 'linha', attrs: defaultAttrs('linha') }))} className={`flex-1 py-2 rounded-lg text-xs font-bold border transition-colors ${form.position === 'linha' ? 'bg-emerald-700 text-white border-emerald-700' : 'bg-zinc-900 text-zinc-400 border-white/10'}`}>Linha</button>
-            <button onClick={() => setForm(f => ({ ...f, position: 'goleiro', attrs: defaultAttrs('goleiro') }))} className={`flex-1 py-2 rounded-lg text-xs font-bold border transition-colors ${form.position === 'goleiro' ? 'bg-sky-600 text-white border-sky-600' : 'bg-zinc-900 text-zinc-400 border-white/10'}`}>Goleiro</button>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="text-[10px] font-bold text-zinc-500 uppercase">Número</label>
-              <input type="number" value={form.numero} onChange={(e) => setForm(f => ({ ...f, numero: e.target.value }))} className="w-full bg-zinc-800 border border-white/10 rounded-lg px-2 py-1.5 text-sm text-zinc-100" />
+            <div className="shrink-0 w-[76px] h-16 flex flex-col items-center justify-center" style={{ clipPath: 'polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)', background: 'linear-gradient(160deg, #0d1116, #070a0d)', border: `1.5px solid ${PV6[posColor]}`, boxShadow: `0 0 14px -2px ${PV6[posColor + 'Glow']}` }}>
+              <span className="text-xl font-black leading-none" style={{ color: PV6[posColor] }}>{overall}</span>
+              <span className="text-[8px] font-bold tracking-widest text-zinc-400 mt-0.5">OVR</span>
             </div>
-            <div>
-              <label className="text-[10px] font-bold text-zinc-500 uppercase">PIN de acesso</label>
-              <div className="flex items-center gap-1 bg-zinc-800 border border-white/10 rounded-lg px-2 py-1.5">
+          </div>
+
+          <div className="flex gap-2.5 mb-4">
+            <button onClick={() => setForm(f => ({ ...f, position: 'linha', attrs: defaultAttrs('linha') }))} className="flex-1 py-3 text-[14px] font-black flex items-center justify-center gap-2 transition-colors" style={{ borderRadius: 5, ...(form.position === 'linha' ? { background: 'rgba(255,255,255,0.05)', border: `1.5px solid ${PV6.green}`, color: PV6.green, boxShadow: `0 0 14px -2px ${PV6.greenGlow}` } : { background: 'rgba(255,255,255,0.02)', border: '1.5px solid rgba(255,255,255,0.12)', color: '#8b93a0' }) }}>
+              <Footprints className="w-4 h-4" /> Linha
+            </button>
+            <button onClick={() => setForm(f => ({ ...f, position: 'goleiro', attrs: defaultAttrs('goleiro') }))} className="flex-1 py-3 text-[14px] font-black flex items-center justify-center gap-2 transition-colors" style={{ borderRadius: 5, ...(form.position === 'goleiro' ? { background: 'rgba(255,255,255,0.05)', border: `1.5px solid ${PV6.blue}`, color: PV6.blue, boxShadow: `0 0 14px -2px ${PV6.blueGlow}` } : { background: 'rgba(255,255,255,0.02)', border: '1.5px solid rgba(255,255,255,0.12)', color: '#8b93a0' }) }}>
+              <Shield className="w-4 h-4" /> Goleiro
+            </button>
+          </div>
+
+          <div className="flex gap-3.5 mb-5">
+            <div className="flex-1">
+              <label className="text-[10.5px] font-bold text-zinc-500 uppercase tracking-wider">Número</label>
+              <div className="flex items-center gap-2 mt-1.5 px-3 py-2.5" style={{ border: '1.5px solid rgba(255,255,255,0.14)', borderRadius: 4 }}>
+                <input type="number" value={form.numero} onChange={(e) => setForm(f => ({ ...f, numero: e.target.value }))} className="w-full bg-transparent text-[15px] font-bold text-zinc-100 outline-none" />
+              </div>
+            </div>
+            <div className="flex-1">
+              <label className="text-[10.5px] font-bold text-zinc-500 uppercase tracking-wider">PIN de acesso</label>
+              <div className="flex items-center gap-1.5 mt-1.5 px-3 py-2.5" style={{ border: '1.5px solid rgba(255,255,255,0.14)', borderRadius: 4 }}>
                 <KeyRound className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
-                <span className="text-sm font-bold flex-1">{form.pin || '----'}</span>
-                <button onClick={() => setForm(f => ({ ...f, pin: genPin() }))} className="text-[10px] font-bold text-emerald-400 shrink-0">gerar</button>
+                <span className="text-[15px] font-bold flex-1 text-zinc-100">{form.pin || '----'}</span>
+                <button onClick={() => setForm(f => ({ ...f, pin: genPin() }))} className="text-[12px] font-black shrink-0" style={{ color: PV6[posColor] }}>gerar</button>
               </div>
             </div>
           </div>
-          <div className="space-y-2">
-            <p className="text-xs font-bold text-zinc-400 uppercase">Atributos (só o organizador vê e edita aqui)</p>
+
+          <div className="flex items-center gap-2.5 mb-4">
+            <p className="text-[15px] font-black tracking-wide" style={{ color: PV6.gold }}>ATRIBUTOS</p>
+            <span className="text-[9.5px] font-bold px-2 py-0.5 flex items-center gap-1" style={{ color: PV6[posColor], border: `1px solid ${PV6[posColor]}`, borderRadius: 3 }}>
+              <Crown className="w-2.5 h-2.5" /> SÓ O ORGANIZADOR VÊ E EDITA
+            </span>
+          </div>
+          <div className="space-y-3.5">
             {attrs.map(a => (
-              <div key={a.key} className="flex items-center gap-2">
-                <span className="text-[11px] text-zinc-400 w-28 shrink-0 leading-tight">{a.label}</span>
-                <input type="range" min="0" max="99" value={form.attrs[a.key]} onChange={(e) => setForm(f => ({ ...f, attrs: { ...f.attrs, [a.key]: Number(e.target.value) } }))} className="flex-1 accent-emerald-700" />
-                <span className="text-xs font-black text-zinc-100 w-6 text-right">{form.attrs[a.key]}</span>
+              <div key={a.key} className="flex items-center gap-3">
+                <span className="w-7 h-7 rounded flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg,#3a2c0d,#1a1508)', border: '1px solid rgba(212,175,55,0.4)' }}>
+                  <a.Icon className="w-3.5 h-3.5" style={{ color: PV6.gold }} />
+                </span>
+                <span className="text-[13.5px] font-bold text-zinc-200 w-[100px] shrink-0 leading-tight">{a.label}</span>
+                <input type="range" min="0" max="99" value={form.attrs[a.key]} onChange={(e) => setForm(f => ({ ...f, attrs: { ...f.attrs, [a.key]: Number(e.target.value) } }))} className="flex-1" style={{ accentColor: PV6[posColor] }} />
+                <span className="text-[13px] font-black text-zinc-100 w-10 text-center shrink-0 py-1.5" style={{ border: '1.5px solid rgba(255,255,255,0.14)', borderRadius: 4 }}>{form.attrs[a.key]}</span>
               </div>
             ))}
           </div>
-        </div>
-        <div className="p-4 pt-0 flex gap-2">
-          <button onClick={() => { if (confirm('Excluir jogador?')) { onDelete(player.id); onClose(); } }} className="px-4 py-2.5 rounded-xl bg-rose-50 text-rose-600 transition-transform active:scale-95"><Trash2 className="w-4 h-4" /></button>
-          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl bg-zinc-800 text-zinc-400 font-bold text-sm transition-transform active:scale-95">Cancelar</button>
-          <button onClick={() => { onSave(form); onClose(); }} className="flex-1 py-2.5 rounded-xl bg-emerald-700 text-white font-bold text-sm transition-transform active:scale-95">Salvar</button>
-        </div>
+
+          <div className="flex gap-2.5 mt-6">
+            <button onClick={() => { if (confirm('Excluir jogador?')) { onDelete(player.id); onClose(); } }} className="flex-1 py-3.5 text-[14px] font-black flex items-center justify-center gap-2 transition-transform active:scale-95" style={{ borderRadius: 5, background: 'rgba(220,38,38,0.08)', border: '1.5px solid #dc2626', color: '#f87171' }}>
+              <Trash2 className="w-4 h-4" /> Excluir
+            </button>
+            <button onClick={onClose} className="flex-1 py-3.5 text-[14px] font-black transition-transform active:scale-95" style={{ borderRadius: 5, background: 'rgba(255,255,255,0.03)', border: '1.5px solid rgba(255,255,255,0.15)', color: '#c5c9d1' }}>Cancelar</button>
+            <button onClick={() => { onSave(form); onClose(); }} className="flex-1 py-3.5 text-[14px] font-black flex items-center justify-center gap-2 transition-transform active:scale-95" style={{ borderRadius: 5, background: `linear-gradient(135deg, ${PV6.green}38, ${PV6.green}0f)`, border: `1.5px solid ${PV6.green}`, color: PV6.green, boxShadow: `0 0 14px -2px ${PV6.greenGlow}` }}>
+              <Check className="w-4 h-4" /> Salvar
+            </button>
+          </div>
+        </Panel>
       </div>
     </div>
   );
@@ -1526,16 +1632,18 @@ function JogosList({ games, players, onCreate, onSelect, setTab, myId }) {
               const confirmados = players.filter(p => g.rsvp[p.id] === 'sim').length;
               const pagos = players.filter(p => g.payments[p.id]).length;
               return (
-                <button key={g.id} onClick={() => onSelect(g.id)} className="w-full text-left bg-zinc-900 rounded-2xl border border-white/10 p-3.5 transition-transform active:scale-[0.98]">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-emerald-400 font-black text-xs uppercase tracking-wide">{fmtDate(g.date)} {g.horario ? `· ${g.horario}` : ''}</span>
-                    <ChevronLeft className="w-4 h-4 text-zinc-600 rotate-180" />
-                  </div>
-                  <div className="flex gap-4 text-xs text-zinc-400 font-medium">
-                    <span className="flex items-center gap-1"><Check className="w-3.5 h-3.5 text-emerald-400" /> {confirmados} confirmados</span>
-                    <span className="flex items-center gap-1"><DollarSign className="w-3.5 h-3.5 text-amber-400" /> {pagos} pagos</span>
-                  </div>
-                </button>
+                <Panel key={g.id} color="gold" cutSize={12} className="w-full text-left transition-transform active:scale-[0.98]" innerStyle={{ padding: 14, cursor: 'pointer' }}>
+                  <button onClick={() => onSelect(g.id)} className="w-full text-left">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="font-black text-xs uppercase tracking-wide" style={{ color: PV6.green }}>{fmtDate(g.date)} {g.horario ? `· ${g.horario}` : ''}</span>
+                      <ChevronLeft className="w-4 h-4 text-zinc-600 rotate-180" />
+                    </div>
+                    <div className="flex gap-4 text-xs text-zinc-400 font-medium">
+                      <span className="flex items-center gap-1"><Check className="w-3.5 h-3.5" style={{ color: PV6.green }} /> {confirmados} confirmados</span>
+                      <span className="flex items-center gap-1"><DollarSign className="w-3.5 h-3.5" style={{ color: PV6.gold }} /> {pagos} pagos</span>
+                    </div>
+                  </button>
+                </Panel>
               );
             })}
           </div>
@@ -1547,11 +1655,13 @@ function JogosList({ games, players, onCreate, onSelect, setTab, myId }) {
 
 function QuickAction({ icon: Icon, label, sub, onClick, active }) {
   return (
-    <button onClick={onClick} className={`flex flex-col items-center justify-center gap-1 rounded-2xl border py-3 px-1 transition-transform active:scale-95 ${active ? 'bg-emerald-500/10 border-emerald-500/40' : 'bg-zinc-900 border-white/10'}`}>
-      <Icon className={`w-5 h-5 ${active ? 'text-emerald-400' : 'text-zinc-400'}`} />
-      <span className={`text-[10px] font-black leading-tight text-center ${active ? 'text-emerald-300' : 'text-zinc-200'}`}>{label}</span>
-      <span className="text-[8px] text-zinc-500 font-semibold leading-none text-center">{sub}</span>
-    </button>
+    <Panel color={active ? 'green' : 'gold'} cutSize={12} className="transition-transform active:scale-95" innerStyle={{ padding: '12px 4px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
+      <button onClick={onClick} className="flex flex-col items-center gap-1 w-full">
+        <Icon className="w-5 h-5" style={{ color: active ? PV6.green : '#a8a29e' }} />
+        <span className="text-[10px] font-black leading-tight text-center" style={{ color: active ? PV6.green : '#e5e7eb' }}>{label}</span>
+        <span className="text-[8px] text-zinc-500 font-semibold leading-none text-center">{sub}</span>
+      </button>
+    </Panel>
   );
 }
 
@@ -1568,10 +1678,11 @@ function ProximoJogoCard({ game, players, onSelect, myId }) {
   return (
     <div>
       <p className="text-[11px] font-black text-zinc-500 uppercase tracking-widest mb-2 px-1">Próximo jogo</p>
-      <button onClick={() => onSelect(game.id)} className="w-full text-left rounded-3xl overflow-hidden border border-emerald-500/20 shadow-lg shadow-black/40 transition-transform active:scale-[0.98]">
-        <div className="bg-gradient-to-br from-zinc-900 to-black p-4 flex gap-3">
-          <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl px-3 py-2 text-center shrink-0 w-16">
-            <p className="text-[9px] font-black text-emerald-400 uppercase">{weekday}</p>
+      <Panel color="green" cutSize={18} innerStyle={{ padding: 0 }} className="shadow-lg shadow-black/40 transition-transform active:scale-[0.98]">
+      <button onClick={() => onSelect(game.id)} className="w-full text-left">
+        <div className="p-4 flex gap-3">
+          <div className="rounded-2xl px-3 py-2 text-center shrink-0 w-16" style={{ background: `${PV6.green}18`, border: `1px solid ${PV6.green}44` }}>
+            <p className="text-[9px] font-black uppercase" style={{ color: PV6.green }}>{weekday}</p>
             <p className="text-2xl font-black text-white leading-none my-0.5">{day}</p>
             <p className="text-[9px] font-black text-zinc-500 uppercase">{month}</p>
           </div>
@@ -1579,26 +1690,27 @@ function ProximoJogoCard({ game, players, onSelect, myId }) {
             <p className="text-white font-black text-base leading-tight truncate">{game.local || 'Local a definir'}</p>
             <p className="text-zinc-400 text-xs font-semibold">{game.horario ? game.horario : 'Horário a definir'}</p>
             <div className="flex gap-2 mt-2 flex-wrap">
-              <span className="bg-emerald-500/15 text-emerald-300 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1"><Users className="w-3 h-3" /> {confirmados.length} confirmados</span>
-              <span className="bg-amber-500/15 text-amber-300 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1"><DollarSign className="w-3 h-3" /> {pagos} pagos</span>
+              <span className="text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1" style={{ background: `${PV6.green}22`, color: PV6.green }}><Users className="w-3 h-3" /> {confirmados.length} confirmados</span>
+              <span className="text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1" style={{ background: `${PV6.gold}22`, color: PV6.gold }}><DollarSign className="w-3 h-3" /> {pagos} pagos</span>
             </div>
           </div>
         </div>
         {confirmados.length > 0 && (
-          <div className="bg-gradient-to-b from-emerald-800 to-emerald-900 px-4 py-3 flex items-center gap-1.5 overflow-hidden">
+          <div className="px-4 py-3 flex items-center gap-1.5 overflow-hidden" style={{ background: `linear-gradient(180deg, ${PV6.greenDark}, #050f0a)` }}>
             {confirmados.slice(0, 7).map(p => <Avatar key={p.id} player={p} size="sm" />)}
             {confirmados.length > 7 && (
               <div className="w-10 h-10 rounded-full bg-black/40 flex items-center justify-center text-white text-[10px] font-black shrink-0">+{confirmados.length - 7}</div>
             )}
           </div>
         )}
-        <div className="bg-emerald-600 text-white text-center py-2.5 font-black text-sm flex items-center justify-center gap-1">
+        <div className="text-center py-3 font-black text-sm flex items-center justify-center gap-1" style={{ background: `linear-gradient(135deg, ${PV6.green}, ${PV6.greenDark})`, color: '#05100a' }}>
           Ver detalhes do jogo <ChevronLeft className="w-4 h-4 rotate-180" />
         </div>
       </button>
+      </Panel>
 
       <div className="grid grid-cols-2 gap-2.5 mt-2.5">
-        <div className="bg-zinc-900 rounded-2xl border border-white/10 p-3">
+        <Panel color="gold" cutSize={12} innerStyle={{ padding: 12 }}>
           <p className="text-[10px] font-black text-zinc-500 uppercase mb-2 flex items-center gap-1"><Users className="w-3 h-3" /> Confirmados ({confirmados.length})</p>
           <div className="flex items-center -space-x-2.5 mb-2 overflow-hidden pl-0.5">
             {confirmados.slice(0, 4).map(p => (
@@ -1609,21 +1721,21 @@ function ProximoJogoCard({ game, players, onSelect, myId }) {
             {confirmados.length > 4 && <div className="w-10 h-10 rounded-full bg-zinc-700 ring-2 ring-zinc-900 flex items-center justify-center text-zinc-300 text-[10px] font-black shrink-0">+{confirmados.length - 4}</div>}
           </div>
           {myId && (
-            <p className={`text-[10px] font-bold flex items-center gap-1 ${meuStatus === 'sim' ? 'text-emerald-400' : 'text-zinc-500'}`}>
+            <p className="text-[10px] font-bold flex items-center gap-1" style={{ color: meuStatus === 'sim' ? PV6.green : '#71717a' }}>
               {meuStatus === 'sim' ? <><CheckCircle2 className="w-3 h-3" /> Você confirmou presença</> : 'Você ainda não confirmou'}
             </p>
           )}
-        </div>
-        <div className="bg-zinc-900 rounded-2xl border border-white/10 p-3">
+        </Panel>
+        <Panel color="gold" cutSize={12} innerStyle={{ padding: 12 }}>
           <p className="text-[10px] font-black text-zinc-500 uppercase mb-2 flex items-center gap-1"><DollarSign className="w-3 h-3" /> Pagamentos</p>
           <div className="flex gap-2 mb-2">
-            <div><p className="text-lg font-black text-emerald-400 leading-none">{pagos}</p><p className="text-[9px] text-zinc-500 font-bold">Pagos</p></div>
-            <div><p className="text-lg font-black text-amber-400 leading-none">{pendentesPag}</p><p className="text-[9px] text-zinc-500 font-bold">Pendentes</p></div>
+            <div><p className="text-lg font-black leading-none" style={{ color: PV6.green }}>{pagos}</p><p className="text-[9px] text-zinc-500 font-bold">Pagos</p></div>
+            <div><p className="text-lg font-black leading-none" style={{ color: PV6.gold }}>{pendentesPag}</p><p className="text-[9px] text-zinc-500 font-bold">Pendentes</p></div>
           </div>
-          <p className={`text-[10px] font-bold flex items-center gap-1 ${pendentesPag === 0 && confirmados.length > 0 ? 'text-emerald-400' : 'text-zinc-500'}`}>
+          <p className="text-[10px] font-bold flex items-center gap-1" style={{ color: pendentesPag === 0 && confirmados.length > 0 ? PV6.green : '#71717a' }}>
             {pendentesPag === 0 && confirmados.length > 0 ? <><CheckCircle2 className="w-3 h-3" /> Tudo certo! 🎉</> : `R$ ${game.valor || '0'} por pessoa`}
           </p>
-        </div>
+        </Panel>
       </div>
     </div>
   );
@@ -1721,15 +1833,15 @@ function ViewerJogos({ games, players, myId, onVoteMvp, onVoteGoleiro, onVoteEnq
         const open = openId === g.id;
         const zoeiras = g.mvp ? generateZoeiras(g, players) : [];
         return (
-          <div key={g.id} className="bg-zinc-900 rounded-2xl border border-white/10 overflow-hidden">
+          <Panel key={g.id} color="gold" cutSize={14} innerStyle={{ padding: 0 }}>
             <button onClick={() => { const next = !open; setOpenId(next ? g.id : null); setShowFormation(next && !!g.teams); }} className="w-full text-left p-4 transition-colors active:bg-white/5">
-              <p className="text-emerald-400 font-black text-sm uppercase tracking-wide">{fmtDate(g.date)} {g.horario ? `· ${g.horario}` : ''}</p>
+              <p className="font-black text-sm uppercase tracking-wide" style={{ color: PV6.green }}>{fmtDate(g.date)} {g.horario ? `· ${g.horario}` : ''}</p>
               {g.local && <p className="text-xs text-zinc-500 mt-0.5">📍 {g.local}</p>}
             </button>
             {open && (
               <div className="px-4 pb-4 space-y-3 border-t border-white/5 pt-3 animate-[fadein_0.2s_ease-out]">
                 {g.teams && (
-                  <button onClick={() => setShowFormation(v => !v)} className="text-[11px] font-bold text-emerald-400 underline block">
+                  <button onClick={() => setShowFormation(v => !v)} className="text-[11px] font-bold underline block" style={{ color: PV6.green }}>
                     {showFormation ? 'Ver pagamentos' : 'Ver escalação dos times'}
                   </button>
                 )}
@@ -1742,7 +1854,7 @@ function ViewerJogos({ games, players, myId, onVoteMvp, onVoteGoleiro, onVoteEnq
                       <div key={p.id} className="flex items-center gap-2">
                         <Avatar player={p} size="sm" />
                         <span className="flex-1 text-xs font-semibold text-zinc-300 truncate">{p.name}</span>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${g.payments[p.id] ? 'bg-emerald-500/15 text-emerald-300' : 'bg-amber-500/15 text-amber-300'}`}>{g.payments[p.id] ? 'Pago' : 'Pendente'}</span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={g.payments[p.id] ? { background: `${PV6.green}22`, color: PV6.green } : { background: `${PV6.gold}22`, color: PV6.gold }}>{g.payments[p.id] ? 'Pago' : 'Pendente'}</span>
                       </div>
                     ))}
                   </div>
@@ -1755,7 +1867,7 @@ function ViewerJogos({ games, players, myId, onVoteMvp, onVoteGoleiro, onVoteEnq
                 {zoeiras.length > 0 && <ZoeiraCard lines={zoeiras} />}
               </div>
             )}
-          </div>
+          </Panel>
         );
       })}
     </div>
@@ -1764,10 +1876,10 @@ function ViewerJogos({ games, players, myId, onVoteMvp, onVoteGoleiro, onVoteEnq
 
 function StatBox({ value, label, color }) {
   return (
-    <div className="flex-1 bg-zinc-900 rounded-xl border border-white/10 py-2.5 text-center flex flex-col justify-center">
+    <Panel color="gold" cutSize={10} className="flex-1" innerStyle={{ padding: '10px 4px', textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
       <p className={`text-xl font-black leading-none ${color || 'text-white'}`}>{value}</p>
       <p className="text-[9px] font-bold text-zinc-500 uppercase mt-1">{label}</p>
-    </div>
+    </Panel>
   );
 }
 
@@ -1789,7 +1901,7 @@ function CircleProgress({ percent }) {
   );
 }
 
-function GameDetail({ game, players, subTab, setSubTab, onBack, onRSVP, onPay, onStat, onDelete, onUpdate, onSorteio, onAbrirVotacao, onApurarVotacao, myId, onVoteMvp, onVoteGoleiro, onVoteEnquete, send }) {
+function GameDetail({ game, players, subTab, setSubTab, onBack, onRSVP, onPay, onStat, onDelete, onUpdate, onSorteio, onAbrirVotacao, onApurarVotacao, onFecharCaixa, myId, onVoteMvp, onVoteGoleiro, onVoteEnquete, send }) {
   const [formationView, setFormationView] = useState(true);
   const confirmados = players.filter(p => game.rsvp[p.id] === 'sim');
   const pendentes = players.filter(p => !game.rsvp[p.id]);
@@ -1831,24 +1943,24 @@ function GameDetail({ game, players, subTab, setSubTab, onBack, onRSVP, onPay, o
   return (
     <div>
       <div className="px-4 pt-4 pb-2 flex items-center justify-between">
-        <button onClick={onBack} className="flex items-center gap-1 text-emerald-400 font-bold text-sm"><ChevronLeft className="w-4 h-4" /> Jogos</button>
+        <button onClick={onBack} className="flex items-center gap-1 font-bold text-sm" style={{ color: PV6.green }}><ChevronLeft className="w-4 h-4" /> Jogos</button>
         <button onClick={() => { if (confirm('Excluir este jogo?')) onDelete(game.id); }} className="text-zinc-500"><Trash2 className="w-4 h-4" /></button>
       </div>
-      <div className="px-4 pb-3">
-        <div className="flex gap-2 mb-1.5">
-          <div className="flex-1 flex items-center gap-1.5 bg-zinc-900 border border-white/10 rounded-xl px-2.5 py-2">
-            <Calendar className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+      <div className="px-4 pb-3 space-y-1.5">
+        <div className="flex gap-2">
+          <Panel color="gold" cutSize={10} className="flex-1" innerStyle={{ padding: '8px 10px', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Calendar className="w-3.5 h-3.5 shrink-0" style={{ color: PV6.green }} />
             <input type="date" value={game.date} onChange={(e) => onUpdate({ date: e.target.value })} className="text-sm font-bold text-zinc-100 bg-transparent outline-none w-full" />
-          </div>
-          <div className="flex items-center gap-1.5 bg-zinc-900 border border-white/10 rounded-xl px-2.5 py-2">
-            <Clock className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+          </Panel>
+          <Panel color="gold" cutSize={10} innerStyle={{ padding: '8px 10px', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Clock className="w-3.5 h-3.5 shrink-0" style={{ color: PV6.green }} />
             <input type="time" value={game.horario} onChange={(e) => onUpdate({ horario: e.target.value })} className="text-sm font-bold text-zinc-100 bg-transparent outline-none" />
-          </div>
+          </Panel>
         </div>
-        <div className="flex items-center gap-1.5 bg-zinc-900 border border-white/10 rounded-xl px-2.5 py-2">
-          <Users className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
+        <Panel color="gold" cutSize={10} innerStyle={{ padding: '8px 10px', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Users className="w-3.5 h-3.5 shrink-0 text-zinc-500" />
           <input value={game.local} onChange={(e) => onUpdate({ local: e.target.value })} placeholder="Local do jogo" className="text-xs text-zinc-300 bg-transparent outline-none w-full" />
-        </div>
+        </Panel>
       </div>
 
       <div className="flex gap-1.5 px-4 mb-3 overflow-x-auto">
@@ -1858,7 +1970,7 @@ function GameDetail({ game, players, subTab, setSubTab, onBack, onRSVP, onPay, o
           { id: 'caixa', label: 'Caixa', icon: DollarSign },
           { id: 'sumula', label: 'Súmula', icon: Award },
         ].map(t => (
-          <button key={t.id} onClick={() => setSubTab(t.id)} className={`flex items-center justify-center gap-1 px-3 py-2 rounded-xl text-xs font-bold border shrink-0 transition-all ${subTab === t.id ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-900/40' : 'bg-zinc-900 text-zinc-400 border-white/10'}`}>
+          <button key={t.id} onClick={() => setSubTab(t.id)} className="flex items-center justify-center gap-1 px-3 py-2 text-xs font-black shrink-0 transition-all" style={{ borderRadius: 5, ...(subTab === t.id ? { background: `linear-gradient(135deg, ${PV6.green}, ${PV6.greenDark})`, color: '#05100a' } : { background: 'rgba(255,255,255,0.02)', border: '1.5px solid rgba(255,255,255,0.12)', color: '#8b93a0' }) }}>
             <t.icon className="w-3.5 h-3.5" /> {t.label}
           </button>
         ))}
@@ -1868,29 +1980,29 @@ function GameDetail({ game, players, subTab, setSubTab, onBack, onRSVP, onPay, o
         {subTab === 'presenca' && (
           <div className="animate-[fadein_0.2s_ease-out]">
             <div className="flex items-stretch gap-2 mb-3">
-              <StatBox value={confirmados.length} label="Confirmados" color="text-emerald-400" />
-              <StatBox value={pendentes.length} label="Pendentes" color="text-amber-400" />
-              <div className="bg-zinc-900 rounded-xl border border-white/10 flex items-center justify-center px-2">
+              <StatBox value={confirmados.length} label="Confirmados" color="" />
+              <StatBox value={pendentes.length} label="Pendentes" color="" />
+              <Panel color="blue" cutSize={10} innerStyle={{ padding: '4px 10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <CircleProgress percent={players.length ? (confirmados.length / players.length) * 100 : 0} />
-              </div>
+              </Panel>
             </div>
             <div className="flex gap-2 mb-3">
-              <button onClick={msgConvite} className="flex-1 flex items-center justify-center gap-1.5 bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 font-bold py-2 rounded-xl text-xs transition-transform active:scale-95"><MessageCircle className="w-3.5 h-3.5" /> Convite</button>
-              <button onClick={msgLembrete} className="flex-1 flex items-center justify-center gap-1.5 bg-amber-500/10 text-amber-300 border border-amber-500/30 font-bold py-2 rounded-xl text-xs transition-transform active:scale-95"><Clock className="w-3.5 h-3.5" /> Lembrete</button>
+              <button onClick={msgConvite} className="flex-1 flex items-center justify-center gap-1.5 font-bold py-2.5 text-xs transition-transform active:scale-95" style={{ borderRadius: 5, background: `${PV6.green}18`, color: PV6.green, border: `1.5px solid ${PV6.green}55` }}><MessageCircle className="w-3.5 h-3.5" /> Convite</button>
+              <button onClick={msgLembrete} className="flex-1 flex items-center justify-center gap-1.5 font-bold py-2.5 text-xs transition-transform active:scale-95" style={{ borderRadius: 5, background: `${PV6.gold}18`, color: PV6.gold, border: `1.5px solid ${PV6.gold}55` }}><Clock className="w-3.5 h-3.5" /> Lembrete</button>
             </div>
             <div className="space-y-2">
               {players.map(p => {
                 const status = game.rsvp[p.id];
                 return (
-                  <div key={p.id} className="flex items-center gap-3 bg-zinc-900 rounded-xl border border-white/10 p-2.5">
+                  <Panel key={p.id} color="gold" cutSize={10} innerStyle={{ padding: 10, display: 'flex', alignItems: 'center', gap: 12 }}>
                     <Avatar player={p} size="sm" />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-zinc-100 truncate">{p.name}</p>
                       <p className="text-[10px] text-zinc-500 font-semibold">{p.position === 'goleiro' ? 'Goleiro' : 'Linha'} · OVR {overallOf(p)}</p>
                     </div>
-                    <button onClick={() => onRSVP(game.id, p.id, 'sim')} className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${status === 'sim' ? 'bg-emerald-600 text-white' : 'bg-zinc-800 text-zinc-500'}`}><Check className="w-4 h-4" /></button>
-                    <button onClick={() => onRSVP(game.id, p.id, 'nao')} className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${status === 'nao' ? 'bg-rose-600 text-white' : 'bg-zinc-800 text-zinc-500'}`}><X className="w-4 h-4" /></button>
-                  </div>
+                    <button onClick={() => onRSVP(game.id, p.id, 'sim')} className="w-8 h-8 rounded-full flex items-center justify-center transition-colors" style={status === 'sim' ? { background: PV6.green, color: '#05100a' } : { background: 'rgba(255,255,255,0.06)', color: '#71717a' }}><Check className="w-4 h-4" /></button>
+                    <button onClick={() => onRSVP(game.id, p.id, 'nao')} className="w-8 h-8 rounded-full flex items-center justify-center transition-colors" style={status === 'nao' ? { background: '#dc2626', color: '#fff' } : { background: 'rgba(255,255,255,0.06)', color: '#71717a' }}><X className="w-4 h-4" /></button>
+                  </Panel>
                 );
               })}
               {players.length === 0 && <EmptyState icon={Users} text="Cadastre jogadores na aba Elenco primeiro" />}
@@ -1900,7 +2012,7 @@ function GameDetail({ game, players, subTab, setSubTab, onBack, onRSVP, onPay, o
 
         {subTab === 'times' && (
           <div className="animate-[fadein_0.2s_ease-out]">
-            <button onClick={onSorteio} className="w-full mb-3 flex items-center justify-center gap-2 bg-emerald-600 text-white font-bold py-2.5 rounded-xl text-sm transition-transform active:scale-[0.98]"><Shuffle className="w-4 h-4" /> Sortear 3 times (5 linha + 1 gol)</button>
+            <button onClick={onSorteio} className="w-full mb-3 flex items-center justify-center gap-2 font-black py-3 text-sm transition-transform active:scale-[0.98]" style={{ borderRadius: 5, background: `linear-gradient(135deg, ${PV6.green}, ${PV6.greenDark})`, color: '#05100a' }}><Shuffle className="w-4 h-4" /> Sortear 3 times (5 linha + 1 gol)</button>
             {confirmados.length > 0 && confirmados.length < 18 && (
               <p className="text-[11px] text-zinc-500 mb-3 text-center">Ideal: 15 de linha + 3 goleiros confirmados. Com o que tiver, o sorteio remaneja.</p>
             )}
@@ -1908,7 +2020,7 @@ function GameDetail({ game, players, subTab, setSubTab, onBack, onRSVP, onPay, o
               <p className="text-center text-sm text-zinc-500 py-10">Confirme presenças e sorteie os times.</p>
             ) : (
               <>
-                <button onClick={() => setFormationView(v => !v)} className="text-[11px] font-bold text-emerald-400 underline mb-3 block">
+                <button onClick={() => setFormationView(v => !v)} className="text-[11px] font-bold underline mb-3 block" style={{ color: PV6.green }}>
                   {formationView ? 'Ver lista' : 'Ver formação no campinho'}
                 </button>
                 {formationView ? (
@@ -1925,74 +2037,128 @@ function GameDetail({ game, players, subTab, setSubTab, onBack, onRSVP, onPay, o
           </div>
         )}
 
-        {subTab === 'caixa' && (
-          <div className="animate-[fadein_0.2s_ease-out]">
-            <div className="flex items-stretch gap-2 mb-3">
-              <StatBox value={`R$ ${((Number(game.valor) || 0) * confirmados.filter(p => game.payments[p.id]).length).toFixed(0)}`} label="Arrecadado" color="text-emerald-400" />
-              <StatBox value={devendo.length} label="Pendentes" color="text-amber-400" />
+        {subTab === 'caixa' && (() => {
+          const arrecadado = players.reduce((sum, p) => sum + (Number(game.payments[p.id]) || 0), 0);
+          const custoQuadra = Math.round(((Number(game.duracaoMin) || 0) / 30) * (Number(game.valorQuadra30) || 0));
+          const sobra = arrecadado - custoQuadra;
+          return (
+          <div className="animate-[fadein_0.2s_ease-out] space-y-3">
+            <div className="flex items-stretch gap-2">
+              <StatBox value={`R$ ${arrecadado}`} label="Arrecadado" color="" />
+              <StatBox value={devendo.length} label="Pendentes" color="" />
             </div>
-            <div className="flex items-center gap-2 bg-zinc-900 rounded-xl border border-white/10 p-2.5 mb-3">
+            <Panel color="gold" cutSize={10} innerStyle={{ padding: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
               <span className="text-xs font-bold text-zinc-400 uppercase">Valor por pessoa</span>
               <input value={game.valor} onChange={(e) => onUpdate({ valor: e.target.value })} placeholder="R$" className="flex-1 text-right text-sm font-bold text-zinc-100 outline-none bg-transparent" />
-            </div>
-            <button onClick={msgCobranca} className="w-full mb-3 flex items-center justify-center gap-2 bg-amber-500/10 text-amber-300 border border-amber-500/30 font-bold py-2.5 rounded-xl text-sm transition-transform active:scale-[0.98]"><MessageCircle className="w-4 h-4" /> Cobrar pendentes no WhatsApp</button>
+            </Panel>
+            <button onClick={msgCobranca} className="w-full flex items-center justify-center gap-2 font-bold py-2.5 text-sm transition-transform active:scale-[0.98]" style={{ borderRadius: 5, background: `${PV6.gold}18`, color: PV6.gold, border: `1.5px solid ${PV6.gold}55` }}><MessageCircle className="w-4 h-4" /> Cobrar pendentes no WhatsApp</button>
+
             <div className="space-y-2">
               {players.map(p => {
-                const paid = !!game.payments[p.id];
+                const pago = Number(game.payments[p.id]) || 0;
+                const cor = game.valor && pago >= Number(game.valor) ? PV6.green : pago > 0 ? PV6.gold : '#71717a';
                 return (
-                  <div key={p.id} className="flex items-center gap-3 bg-zinc-900 rounded-xl border border-white/10 p-2.5">
+                  <Panel key={p.id} color="gold" cutSize={10} innerStyle={{ padding: 10, display: 'flex', alignItems: 'center', gap: 12 }}>
                     <Avatar player={p} size="sm" />
                     <span className="flex-1 text-sm font-semibold text-zinc-100 truncate">{p.name}</span>
-                    <button onClick={() => onPay(game.id, p.id)} className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors flex items-center gap-1 ${paid ? 'bg-emerald-600 text-white' : 'bg-amber-500/15 text-amber-300'}`}>{paid ? <><CheckCircle2 className="w-3.5 h-3.5" /> Pago</> : 'Pendente'}</button>
-                  </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <span className="text-[11px] text-zinc-500">R$</span>
+                      <input type="number" value={game.payments[p.id] ?? ''} onChange={(e) => onPay(game.id, p.id, e.target.value)}
+                        className="w-16 bg-transparent text-right text-sm font-black outline-none" style={{ color: cor, border: '1.5px solid rgba(255,255,255,0.14)', borderRadius: 4, padding: '5px 8px' }} placeholder="0" />
+                    </div>
+                  </Panel>
                 );
               })}
               {players.length === 0 && <EmptyState icon={Users} text="Cadastre jogadores na aba Elenco primeiro" />}
             </div>
+
+            <p className="text-xs font-black text-zinc-400 uppercase pt-2 flex items-center gap-1.5"><Wallet className="w-3.5 h-3.5" style={{ color: PV6.gold }} /> Dados da quadra</p>
+            <Panel color="gold" cutSize={10} innerStyle={{ padding: 12 }}>
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <label className="text-[9.5px] font-bold text-zinc-500 uppercase">Valor / 30min</label>
+                  <div className="flex items-center gap-1 mt-1" style={{ border: '1.5px solid rgba(255,255,255,0.14)', borderRadius: 4, padding: '7px 8px' }}>
+                    <span className="text-xs text-zinc-500">R$</span>
+                    <input type="number" value={game.valorQuadra30} onChange={(e) => onUpdate({ valorQuadra30: e.target.value })} placeholder="0" className="w-full bg-transparent text-sm font-bold text-zinc-100 outline-none" />
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <label className="text-[9.5px] font-bold text-zinc-500 uppercase">Duração (min)</label>
+                  <div className="flex items-center gap-1 mt-1" style={{ border: '1.5px solid rgba(255,255,255,0.14)', borderRadius: 4, padding: '7px 8px' }}>
+                    <Clock className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
+                    <input type="number" value={game.duracaoMin} onChange={(e) => onUpdate({ duracaoMin: e.target.value })} placeholder="60" className="w-full bg-transparent text-sm font-bold text-zinc-100 outline-none" />
+                  </div>
+                </div>
+              </div>
+            </Panel>
+
+            {custoQuadra > 0 && (
+              <>
+                <p className="text-xs font-black text-zinc-400 uppercase pt-1 flex items-center gap-1.5">🧮 Fechamento automático</p>
+                <Panel color="green" cutSize={10} innerStyle={{ padding: 14 }}>
+                  <div className="flex items-center justify-between py-1 text-[12.5px]"><span className="text-zinc-400">Custo da quadra</span><span className="font-bold text-zinc-100">R$ {custoQuadra}</span></div>
+                  <div className="flex items-center justify-between py-1 text-[12.5px]"><span className="text-zinc-400">Arrecadado</span><span className="font-bold text-zinc-100">R$ {arrecadado}</span></div>
+                  <div className="h-px my-1.5" style={{ background: 'rgba(255,255,255,0.1)' }} />
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="text-[12.5px] font-black" style={{ color: PV6.gold }}>{sobra >= 0 ? 'SOBRA PRO CAIXA' : 'FALTOU'}</span>
+                    <span className="text-2xl font-black" style={{ color: sobra >= 0 ? PV6.green : '#f87171' }}>{sobra >= 0 ? '+' : '−'}R$ {Math.abs(sobra)}</span>
+                  </div>
+                  {game.caixaLancado ? (
+                    <p className="text-[11px] text-zinc-500 text-center mt-3 flex items-center justify-center gap-1"><CheckCircle2 className="w-3.5 h-3.5" style={{ color: PV6.green }} /> Já lançado no caixa do grupo</p>
+                  ) : (
+                    <button onClick={() => onFecharCaixa(sobra)} className="w-full mt-3 py-2.5 text-[13px] font-black flex items-center justify-center gap-2 transition-transform active:scale-95" style={{ borderRadius: 5, background: `linear-gradient(135deg, ${PV6.green}, ${PV6.greenDark})`, color: '#05100a' }}>
+                      <Check className="w-4 h-4" /> Confirmar e mandar pro caixa do grupo
+                    </button>
+                  )}
+                </Panel>
+              </>
+            )}
           </div>
-        )}
+          );
+        })()}
+
 
         {subTab === 'sumula' && (
           <div className="space-y-3 animate-[fadein_0.2s_ease-out]">
             {confirmados.length > 0 && !game.mvp && !game.votacaoAberta && (
-              <button onClick={onAbrirVotacao} className="w-full flex items-center justify-center gap-2 bg-amber-500 text-black font-black py-3 rounded-xl text-sm transition-transform active:scale-[0.98]">🏁 Encerrar pelada e abrir votação</button>
+              <button onClick={onAbrirVotacao} className="w-full flex items-center justify-center gap-2 font-black py-3 text-sm transition-transform active:scale-[0.98]" style={{ borderRadius: 5, background: `linear-gradient(135deg, ${PV6.gold}, ${PV6.goldDark})`, color: '#050608' }}>🏁 Encerrar pelada e abrir votação</button>
             )}
             {game.votacaoAberta && !game.mvp && (
               <div className="space-y-3">
-                <div className="bg-amber-500/10 border border-amber-500/25 rounded-xl p-3">
-                  <p className="text-xs font-bold text-amber-300">📣 Votação aberta! Chama a galera pra votar na aba "Votação" (MVP, melhor goleiro e bola murcha).</p>
-                </div>
-                <button onClick={onApurarVotacao} className="w-full flex items-center justify-center gap-2 bg-emerald-600 text-white font-black py-3 rounded-xl text-sm transition-transform active:scale-[0.98]">✅ Apurar resultado e fechar votação</button>
+                <Panel color="gold" cutSize={10} innerStyle={{ padding: 12 }}>
+                  <p className="text-xs font-bold" style={{ color: PV6.gold }}>📣 Votação aberta! Chama a galera pra votar na aba "Votação" (MVP, melhor goleiro e bola murcha).</p>
+                </Panel>
+                <button onClick={onApurarVotacao} className="w-full flex items-center justify-center gap-2 font-black py-3 text-sm transition-transform active:scale-[0.98]" style={{ borderRadius: 5, background: `linear-gradient(135deg, ${PV6.green}, ${PV6.greenDark})`, color: '#05100a' }}>✅ Apurar resultado e fechar votação</button>
               </div>
             )}
             {game.mvp && (
-              <div className="bg-zinc-900 rounded-xl border border-white/10 p-3 space-y-1.5">
+              <Panel color="gold" cutSize={10} innerStyle={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <div className="flex items-center gap-2">
-                  <Star className="w-4 h-4 text-amber-500 shrink-0" />
+                  <Star className="w-4 h-4 shrink-0" style={{ color: PV6.gold }} />
                   <span className="text-xs font-bold text-zinc-400">MVP:</span>
                   <span className="text-sm font-bold text-zinc-100">{players.find(p => p.id === game.mvp)?.name}</span>
                 </div>
                 {game.melhorGoleiroId && (
                   <div className="flex items-center gap-2">
-                    <Shield className="w-4 h-4 text-sky-400 shrink-0" />
+                    <Shield className="w-4 h-4 shrink-0" style={{ color: PV6.blue }} />
                     <span className="text-xs font-bold text-zinc-400">Melhor goleiro:</span>
                     <span className="text-sm font-bold text-zinc-100">{players.find(p => p.id === game.melhorGoleiroId)?.name}</span>
                   </div>
                 )}
-              </div>
+              </Panel>
             )}
-            <button onClick={msgSumula} className="w-full flex items-center justify-center gap-2 bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 font-bold py-2.5 rounded-xl text-sm transition-transform active:scale-[0.98]"><MessageCircle className="w-4 h-4" /> Mandar súmula no WhatsApp</button>
+            <button onClick={msgSumula} className="w-full flex items-center justify-center gap-2 font-bold py-2.5 text-sm transition-transform active:scale-[0.98]" style={{ borderRadius: 5, background: `${PV6.green}18`, color: PV6.green, border: `1.5px solid ${PV6.green}55` }}><MessageCircle className="w-4 h-4" /> Mandar súmula no WhatsApp</button>
             {game.mvp && <ZoeiraCard lines={generateZoeiras(game, players)} />}
             {players.map(p => {
               const s = game.stats[p.id] || {};
               const isGk = p.position === 'goleiro';
               return (
-                <div key={p.id} className={`rounded-xl border p-3 ${isGk ? 'bg-sky-500/5 border-sky-500/20' : 'bg-zinc-900 border-white/10'}`}>
+                <Panel key={p.id} color={isGk ? 'blue' : 'gold'} cutSize={10} innerStyle={{ padding: 12 }}>
                   <div className="flex items-center gap-2 mb-2">
                     <Avatar player={p} size="sm" />
                     <span className="text-sm font-bold text-zinc-100 flex-1 truncate">{p.name}</span>
-                    {isGk && <span className="text-[9px] font-black text-sky-300 bg-sky-500/15 px-2 py-0.5 rounded-full uppercase">Goleiro</span>}
-                    {game.mvp === p.id && <Star className="w-4 h-4 text-amber-500" />}
+                    {isGk && <span className="text-[9px] font-black px-2 py-0.5 rounded-full uppercase" style={{ color: PV6.blue, background: `${PV6.blue}22` }}>Goleiro</span>}
+                    {game.mvp === p.id && <Star className="w-4 h-4" style={{ color: PV6.gold }} />}
                   </div>
                   <div className={`grid gap-2 ${isGk ? 'grid-cols-3' : 'grid-cols-2'}`}>
                     {!isGk ? (
@@ -2008,7 +2174,7 @@ function GameDetail({ game, players, subTab, setSubTab, onBack, onRSVP, onPay, o
                       </>
                     )}
                   </div>
-                </div>
+                </Panel>
               );
             })}
             {players.length === 0 && <EmptyState icon={Users} text="Cadastre jogadores na aba Elenco primeiro" />}
@@ -2021,29 +2187,41 @@ function GameDetail({ game, players, subTab, setSubTab, onBack, onRSVP, onPay, o
 
 function TeamCol({ title, ids, players, colorIdx }) {
   const list = ids.map(id => players.find(p => p.id === id)).filter(Boolean);
-  const palette = ['bg-emerald-500/10 border-emerald-500/30 text-emerald-300', 'bg-sky-500/10 border-sky-500/30 text-sky-300', 'bg-amber-500/10 border-amber-500/30 text-amber-300'];
+  const colors = ['green', 'blue', 'gold'];
+  const color = colors[colorIdx % colors.length];
   return (
-    <div className={`rounded-xl border p-2 ${palette[colorIdx % palette.length]}`}>
-      <p className="text-[11px] font-black uppercase mb-1.5">{title}</p>
+    <Panel color={color} cutSize={10} innerStyle={{ padding: 8 }}>
+      <p className="text-[11px] font-black uppercase mb-1.5" style={{ color: PV6[color] }}>{title}</p>
       <div className="space-y-1.5">
         {list.map(p => (
           <div key={p.id} className="flex items-center gap-1">
             <Avatar player={p} size="sm" />
-            <span className="text-[11px] font-semibold truncate">{p.name}</span>
+            <span className="text-[11px] font-semibold truncate text-zinc-200">{p.name}</span>
           </div>
         ))}
       </div>
-    </div>
+    </Panel>
   );
 }
 
 function StatField({ label, icon: Icon, value, onChange }) {
   return (
-    <div className="flex items-center gap-1 bg-zinc-800 rounded-lg border border-white/5 px-1.5 py-1.5">
+    <div className="flex items-center gap-1 px-1.5 py-1.5" style={{ border: '1px solid rgba(255,255,255,0.1)', borderRadius: 4, background: 'rgba(0,0,0,0.25)' }}>
       <Icon className="w-3 h-3 text-zinc-500 shrink-0" />
       <span className="text-[10px] text-zinc-400 font-medium shrink-0 truncate">{label}</span>
       <input type="number" min="0" value={value ?? ''} onChange={(e) => onChange(e.target.value)} className="w-full text-right text-sm font-bold text-zinc-100 bg-transparent outline-none" placeholder="0" />
     </div>
+  );
+}
+
+function TechCounter({ icon: Icon, value, label, color }) {
+  return (
+    <Panel color={color} cutSize={12} className="flex-1" innerStyle={{ padding: '10px 8px', minHeight: 72, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 4 }}>
+      <span className="absolute top-0 left-[10%] right-[10%] h-[2px] blur-[1px]" style={{ background: `linear-gradient(90deg, transparent, ${PV6[color]}, transparent)` }} />
+      <Icon className="w-4.5 h-4.5" style={{ color: PV6[color], width: 18, height: 18 }} />
+      <p className="text-2xl font-black leading-none" style={{ color: PV6[color] }}>{value}</p>
+      <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-400">{label}</p>
+    </Panel>
   );
 }
 
@@ -2068,61 +2246,91 @@ function ElencoTab({ players, onAdd, onOpenEdit, onApprovePhoto, onRejectPhoto }
   const pending = players.filter(p => p.fotoPendente);
 
   return (
-    <div className="p-4">
+    <div className="relative p-3">
       {pending.length > 0 && (
-        <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-3 mb-4">
-          <p className="text-xs font-black text-amber-300 uppercase mb-2.5 flex items-center gap-1.5"><Camera className="w-3.5 h-3.5" /> Fotos aguardando aprovação ({pending.length})</p>
+        <Panel color="gold" cutSize={14} className="mb-3.5" innerStyle={{ padding: 12 }}>
+          <p className="text-xs font-black uppercase mb-2.5 flex items-center gap-1.5" style={{ color: PV6.gold }}><Camera className="w-3.5 h-3.5" /> Fotos aguardando aprovação ({pending.length})</p>
           <div className="space-y-2">
             {pending.map(p => (
-              <div key={p.id} className="flex items-center gap-2.5 bg-zinc-900/60 rounded-xl p-2">
-                <img src={p.fotoPendente} alt={p.name} className="w-12 h-12 rounded-full object-cover ring-2 ring-amber-400" />
+              <div key={p.id} className="flex items-center gap-2.5 rounded-xl p-2" style={{ background: 'rgba(0,0,0,0.35)' }}>
+                <img src={p.fotoPendente} alt={p.name} className="w-12 h-12 rounded-full object-cover" style={{ boxShadow: `0 0 0 2px ${PV6.gold}` }} />
                 <span className="flex-1 text-sm font-bold text-zinc-100 truncate">{p.name}</span>
                 <button onClick={() => onApprovePhoto(p.id)} className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center transition-transform active:scale-90"><Check className="w-4 h-4 text-white" /></button>
                 <button onClick={() => onRejectPhoto(p.id)} className="w-8 h-8 rounded-full bg-rose-600 flex items-center justify-center transition-transform active:scale-90"><X className="w-4 h-4 text-white" /></button>
               </div>
             ))}
           </div>
-        </div>
+        </Panel>
       )}
+
       {players.length > 0 && (
-        <div className="flex gap-2 mb-4">
-          <StatBox value={players.length} label="Jogadores" />
-          <StatBox value={linhaCount} label="Linha" color="text-emerald-400" />
-          <StatBox value={golCount} label="Goleiros" color="text-sky-400" />
+        <div className="relative flex gap-2 mb-3.5">
+          <TechCounter icon={Users} value={players.length} label="Jogadores" color="green" />
+          <TechCounter icon={Footprints} value={linhaCount} label="Linha" color="gold" />
+          <TechCounter icon={Shield} value={golCount} label="Goleiros" color="blue" />
         </div>
       )}
-      <div className="bg-zinc-900 rounded-2xl border border-white/10 p-3 mb-4 shadow-sm">
-        <p className="text-xs font-bold text-zinc-400 uppercase mb-2">Adicionar jogador</p>
-        <input value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
-          placeholder="Nome do jogador" className="w-full bg-zinc-800 border border-white/10 rounded-lg px-3 py-2 text-sm mb-2 outline-none focus:border-emerald-500 transition-colors text-zinc-100 placeholder:text-zinc-500" />
-        <div className="flex gap-2">
-          <button onClick={() => setPosition('linha')} className={`flex-1 py-2 rounded-lg text-xs font-bold border transition-colors ${position === 'linha' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-zinc-900 text-zinc-400 border-white/10'}`}>Linha</button>
-          <button onClick={() => setPosition('goleiro')} className={`flex-1 py-2 rounded-lg text-xs font-bold border transition-colors ${position === 'goleiro' ? 'bg-sky-600 text-white border-sky-600' : 'bg-zinc-900 text-zinc-400 border-white/10'}`}>Goleiro</button>
-          <button onClick={handleAdd} className="px-4 bg-emerald-600 text-white rounded-lg transition-transform active:scale-95"><Plus className="w-4 h-4" /></button>
+
+      <Panel color="gold" cutSize={18} className="mb-3.5" innerStyle={{ padding: 18 }}>
+        <p className="text-[15px] font-black uppercase mb-3.5 tracking-wider flex items-center gap-1.5" style={{ color: PV6.gold }}>
+          Adicionar jogador
+          <span className="flex gap-[3px] ml-auto">
+            <span className="w-2 h-[2px] skew-x-[-25deg]" style={{ background: PV6.gold, opacity: 0.6 }} />
+            <span className="w-2 h-[2px] skew-x-[-25deg]" style={{ background: PV6.gold, opacity: 0.6 }} />
+            <span className="w-2 h-[2px] skew-x-[-25deg]" style={{ background: PV6.gold, opacity: 0.6 }} />
+          </span>
+        </p>
+        <div className="flex items-center gap-2.5 mb-3.5 px-3.5 py-3" style={{ border: `1.5px solid ${PV6.gold}59`, background: 'rgba(255,255,255,0.02)', borderRadius: 4 }}>
+          <User className="w-4 h-4 shrink-0 text-zinc-500" />
+          <input value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
+            placeholder="Nome do jogador" className="flex-1 bg-transparent text-sm outline-none text-zinc-100 placeholder:text-zinc-500" />
         </div>
-      </div>
+        <div className="flex gap-2.5">
+          <button onClick={() => setPosition('linha')} className="flex-1 flex items-center justify-center gap-2 py-3 text-[13px] font-black transition-colors" style={{ borderRadius: 5, ...(position === 'linha' ? { background: `linear-gradient(135deg, ${PV6.green}28, ${PV6.green}0d)`, border: `1.5px solid ${PV6.green}`, color: PV6.green, boxShadow: `0 0 14px -2px ${PV6.greenGlow}` } : { background: 'rgba(255,255,255,0.02)', border: '1.5px solid rgba(255,255,255,0.12)', color: '#8b93a0' }) }}>
+            <Footprints className="w-4 h-4" /> LINHA
+          </button>
+          <button onClick={() => setPosition('goleiro')} className="flex-1 flex items-center justify-center gap-2 py-3 text-[13px] font-black transition-colors" style={{ borderRadius: 5, ...(position === 'goleiro' ? { background: `linear-gradient(135deg, ${PV6.blue}28, ${PV6.blue}0d)`, border: `1.5px solid ${PV6.blue}`, color: PV6.blue, boxShadow: `0 0 14px -2px ${PV6.blueGlow}` } : { background: 'rgba(255,255,255,0.02)', border: '1.5px solid rgba(255,255,255,0.12)', color: '#8b93a0' }) }}>
+            <Shield className="w-4 h-4" /> GOLEIRO
+          </button>
+          <button onClick={handleAdd} className="w-14 flex items-center justify-center shrink-0 transition-transform active:scale-90" style={{ borderRadius: 5, background: `linear-gradient(135deg, ${PV6.green}, ${PV6.greenDark})`, boxShadow: `0 0 16px -2px ${PV6.greenGlow}` }}>
+            <Plus className="w-5 h-5" style={{ color: '#05100a' }} />
+          </button>
+        </div>
+      </Panel>
+
       {players.length > 0 && (
-        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar jogador..." className="w-full bg-zinc-900 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-zinc-100 outline-none focus:border-emerald-500 mb-3 transition-colors" />
+        <Panel color="gold" cutSize={14} className="mb-3.5" innerStyle={{ padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <Search className="w-4 h-4 shrink-0 text-zinc-500" />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar jogador..." className="flex-1 bg-transparent text-sm outline-none text-zinc-100 placeholder:text-zinc-500" />
+          <ChevronRight className="w-4 h-4 rotate-90 shrink-0" style={{ color: PV6.gold }} />
+        </Panel>
       )}
-      <div className="space-y-2">
+
+      <div className="relative space-y-2.5">
         {filtered.map(p => {
           const overall = overallOf(p);
-          const tier = cardTier(overall);
+          const isGk = p.position === 'goleiro';
+          const posColor = isGk ? 'blue' : 'green';
           return (
-            <button key={p.id} onClick={() => onOpenEdit(p)} className="w-full flex items-center gap-3 bg-zinc-900 rounded-xl border border-white/10 p-3 text-left transition-transform active:scale-[0.98]">
-              <Avatar player={p} />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-zinc-100 truncate">{p.name}</p>
-                <p className="text-[11px] text-zinc-500 flex items-center gap-1">
-                  {p.position === 'goleiro' ? <Shield className="w-3 h-3" /> : <Footprints className="w-3 h-3" />}
-                  {p.position === 'goleiro' ? 'Goleiro' : 'Linha'} · #{p.numero}
-                </p>
+            <Panel key={p.id} color={posColor} cutSize={14} className="w-full text-left transition-transform active:scale-[0.98]"
+              innerStyle={{ padding: '10px 14px 10px 10px', display: 'flex', alignItems: 'center', gap: 12, minHeight: 74, cursor: 'pointer' }}>
+              <div onClick={() => onOpenEdit(p)} className="flex items-center gap-3 w-full">
+                <span className="absolute left-0 top-[12%] bottom-[12%] w-[3px] rounded" style={{ background: `linear-gradient(180deg, transparent, ${PV6[posColor]}, transparent)`, boxShadow: `0 0 10px 1px ${PV6[posColor]}` }} />
+                <div className="relative shrink-0 w-14 h-14 rounded-full p-[2px]" style={{ background: `conic-gradient(from 180deg, ${PV6[posColor]}, ${PV6[posColor + 'Dark']}, ${PV6[posColor]}, ${PV6[posColor + 'Dark']}, ${PV6[posColor]})` }}>
+                  <Avatar player={p} />
+                  <span className="absolute -bottom-1 -left-1 w-5 h-5 rounded-full flex items-center justify-center" style={{ background: PV6[posColor + 'Dark'], border: '2px solid #05070c' }}>
+                    {isGk ? <Shield className="w-2.5 h-2.5" style={{ color: PV6.blue }} /> : <Footprints className="w-2.5 h-2.5" style={{ color: PV6.green }} />}
+                  </span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[16px] font-black text-white truncate">{p.name}</p>
+                  <p className="text-[11.5px] text-zinc-400 mt-0.5">{isGk ? 'Goleiro' : 'Linha'} · #{p.numero}</p>
+                  <p className="text-[10px] text-zinc-600 mt-0.5">PIN {p.pin || '----'}</p>
+                </div>
+                <span className="shrink-0 px-3.5 py-1.5 text-[13px] font-black" style={{ borderRadius: 3, background: `linear-gradient(135deg, ${PV6[posColor + 'Dark']}, ${PV6[posColor + 'Dark']}99)`, border: `1px solid ${PV6[posColor]}`, color: PV6[posColor], boxShadow: `0 0 12px -2px ${PV6[posColor + 'Glow']}`, clipPath: 'polygon(8px 0,100% 0,100% 100%,0 100%,0 8px)' }}>{overall} OVR</span>
+                <ChevronRight className="w-4 h-4 shrink-0" style={{ color: PV6.gold, opacity: 0.7 }} />
               </div>
-              <div className="flex flex-col items-end gap-1 shrink-0">
-                <span className={`text-[10px] font-black px-2 py-0.5 rounded-full bg-gradient-to-r ${tier.grad} ${tier.text}`}>{overall} OVR</span>
-                <span className="text-[9px] text-zinc-600 font-bold">PIN {p.pin || '----'}</span>
-              </div>
-            </button>
+            </Panel>
           );
         })}
         {players.length === 0 && <EmptyState icon={Users} text="Nenhum jogador cadastrado ainda" sub="Adicione o primeiro jogador aí em cima." />}
@@ -2134,7 +2342,7 @@ function ElencoTab({ players, onAdd, onOpenEdit, onApprovePhoto, onRejectPhoto }
 
 function ChipBtn({ active, onClick, icon: Icon, label }) {
   return (
-    <button onClick={onClick} className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${active ? 'bg-emerald-700 text-white border-emerald-700' : 'bg-zinc-900 text-zinc-400 border-white/10'}`}>
+    <button onClick={onClick} className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-black transition-colors" style={{ borderRadius: 5, ...(active ? { background: `linear-gradient(135deg, ${PV6.green}28, ${PV6.green}0d)`, border: `1.5px solid ${PV6.green}`, color: PV6.green, boxShadow: `0 0 12px -2px ${PV6.greenGlow}` } : { background: 'rgba(255,255,255,0.02)', border: '1.5px solid rgba(255,255,255,0.12)', color: '#8b93a0' }) }}>
       <Icon className="w-3.5 h-3.5" /> {label}
     </button>
   );
@@ -2143,7 +2351,8 @@ function ChipBtn({ active, onClick, icon: Icon, label }) {
 function RankingList({ list, valueKey, unit, onOpenCard, myId, showCrown }) {
   if (list.length === 0) return <p className="text-xs text-zinc-500 text-center py-4">Sem dados ainda.</p>;
   return (
-    <div className="bg-zinc-900 rounded-2xl border border-white/10 divide-y divide-white/5 overflow-hidden animate-[fadein_0.2s_ease-out]">
+    <Panel color="gold" cutSize={14} innerStyle={{ padding: 0 }} className="animate-[fadein_0.2s_ease-out]">
+      <div className="divide-y divide-white/5">
       {list.map((r, i) => {
         const isTop = showCrown && i === 0;
         return (
@@ -2162,7 +2371,8 @@ function RankingList({ list, valueKey, unit, onOpenCard, myId, showCrown }) {
           </button>
         );
       })}
-    </div>
+      </div>
+    </Panel>
   );
 }
 
@@ -2231,8 +2441,8 @@ function SeasonSummary({ games, players }) {
     });
   });
   return (
-    <div className="bg-zinc-900 rounded-2xl border border-white/10 p-3">
-      <p className="text-xs font-black text-zinc-400 uppercase mb-2 flex items-center gap-1"><Sparkles className="w-3.5 h-3.5 text-amber-500" /> Resumo da temporada</p>
+    <Panel color="gold" cutSize={14} innerStyle={{ padding: 12 }}>
+      <p className="text-xs font-black uppercase mb-2 flex items-center gap-1.5" style={{ color: PV6.gold }}><Sparkles className="w-3.5 h-3.5" /> Resumo da temporada</p>
       <div className="grid grid-cols-3 gap-2 text-center mb-2">
         <MiniStat label="Peladas" value={totalGames} />
         <MiniStat label="Gols" value={totalGols} />
@@ -2243,7 +2453,7 @@ function SeasonSummary({ games, players }) {
           🔥 Maior artilheiro num jogo só: <span className="font-bold text-zinc-100">{recorde.player.name}</span> com {recorde.gols} gols em {fmtDate(recorde.date)}
         </p>
       )}
-    </div>
+    </Panel>
   );
 }
 
@@ -2277,18 +2487,19 @@ function CompareModal({ players, ranking, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-40 p-4 animate-[fadein_0.2s_ease-out]" onClick={onClose}>
-      <div className="bg-zinc-900 rounded-3xl w-full max-w-sm max-h-[90vh] overflow-y-auto animate-[popin_0.22s_ease-out]" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-40 p-4 animate-[fadein_0.2s_ease-out]" onClick={onClose}>
+      <div className="w-full max-w-sm max-h-[90vh] overflow-y-auto animate-[popin_0.22s_ease-out]" onClick={(e) => e.stopPropagation()}>
+      <Panel color="gold" cutSize={16} innerStyle={{ padding: 0 }}>
         <div className="p-4">
-          <h3 className="font-black text-white mb-3 flex items-center gap-2"><Swords className="w-4 h-4 text-emerald-400" /> Comparar jogadores</h3>
+          <h3 className="font-black text-white mb-3 flex items-center gap-2"><Swords className="w-4 h-4" style={{ color: PV6.green }} /> Comparar jogadores</h3>
           <div className="grid grid-cols-2 gap-2 mb-4">
-            <select value={aId} onChange={(e) => setAId(e.target.value)} className="bg-zinc-800 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-zinc-100">
-              <option value="">Jogador 1</option>
-              {players.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            <select value={aId} onChange={(e) => setAId(e.target.value)} className="bg-transparent text-xs text-zinc-100 px-2 py-2" style={{ border: '1.5px solid rgba(255,255,255,0.14)', borderRadius: 4 }}>
+              <option value="" className="bg-zinc-900">Jogador 1</option>
+              {players.map(p => <option key={p.id} value={p.id} className="bg-zinc-900">{p.name}</option>)}
             </select>
-            <select value={bId} onChange={(e) => setBId(e.target.value)} className="bg-zinc-800 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-zinc-100">
-              <option value="">Jogador 2</option>
-              {players.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            <select value={bId} onChange={(e) => setBId(e.target.value)} className="bg-transparent text-xs text-zinc-100 px-2 py-2" style={{ border: '1.5px solid rgba(255,255,255,0.14)', borderRadius: 4 }}>
+              <option value="" className="bg-zinc-900">Jogador 2</option>
+              {players.map(p => <option key={p.id} value={p.id} className="bg-zinc-900">{p.name}</option>)}
             </select>
           </div>
           {a && b && (
@@ -2313,13 +2524,14 @@ function CompareModal({ players, ranking, onClose }) {
               )) : (
                 <p className="text-[11px] text-zinc-500 text-center mt-2">Posições diferentes — atributos específicos não comparados.</p>
               )}
-              <button onClick={share} className="w-full mt-4 flex items-center justify-center gap-2 bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-sm transition-transform active:scale-95">
+              <button onClick={share} className="w-full mt-4 flex items-center justify-center gap-2 font-black py-3 text-sm transition-transform active:scale-95" style={{ borderRadius: 5, background: `linear-gradient(135deg, ${PV6.green}38, ${PV6.green}0f)`, border: `1.5px solid ${PV6.green}`, color: PV6.green, boxShadow: `0 0 14px -2px ${PV6.greenGlow}` }}>
                 <Share2 className="w-4 h-4" /> Compartilhar comparativo
               </button>
             </>
           )}
         </div>
-        <button onClick={onClose} className="w-full bg-zinc-800 text-zinc-400 font-bold text-sm py-2.5">Fechar</button>
+        <button onClick={onClose} className="w-full text-zinc-400 font-bold text-sm py-3" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>Fechar</button>
+      </Panel>
       </div>
     </div>
   );
@@ -2328,10 +2540,10 @@ function CompareModal({ players, ranking, onClose }) {
 function BolaoCard({ label, icon: Icon, value, onChange, options, placeholder }) {
   return (
     <div>
-      <p className="text-xs font-bold text-zinc-400 uppercase mb-1.5 flex items-center gap-1.5"><Icon className="w-3.5 h-3.5 text-amber-400" /> {label}</p>
-      <select value={value} onChange={(e) => onChange(e.target.value)} className="w-full bg-zinc-800 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-zinc-100 outline-none focus:border-amber-500">
-        <option value="">{placeholder}</option>
-        {options.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+      <p className="text-xs font-bold text-zinc-400 uppercase mb-1.5 flex items-center gap-1.5"><Icon className="w-3.5 h-3.5" style={{ color: PV6.gold }} /> {label}</p>
+      <select value={value} onChange={(e) => onChange(e.target.value)} className="w-full bg-transparent px-3 py-2.5 text-sm text-zinc-100 outline-none" style={{ border: `1.5px solid rgba(255,255,255,0.14)`, borderRadius: 4 }}>
+        <option value="" className="bg-zinc-900">{placeholder}</option>
+        {options.map(p => <option key={p.id} value={p.id} className="bg-zinc-900">{p.name}</option>)}
       </select>
     </div>
   );
@@ -2341,14 +2553,14 @@ function WhoAlreadyBet({ confirmados, palpites }) {
   const apostaram = confirmados.filter(p => palpites?.[p.id]);
   if (confirmados.length === 0) return null;
   return (
-    <div className="flex items-center gap-2 bg-white/5 rounded-xl px-3 py-2.5">
+    <Panel color="green" cutSize={12} innerStyle={{ padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
       <div className="flex -space-x-2 shrink-0">
         {apostaram.slice(0, 5).map(p => <Avatar key={p.id} player={p} size="sm" />)}
       </div>
       <p className="text-[11px] font-semibold text-zinc-400 flex-1">
         {apostaram.length === 0 ? 'Ninguém apostou ainda — seja o primeiro!' : `${apostaram.length} de ${confirmados.length} já apostaram`}
       </p>
-    </div>
+    </Panel>
   );
 }
 
@@ -2373,12 +2585,12 @@ function BolaoResultCard({ game, players }) {
     );
   };
   return (
-    <div className="bg-gradient-to-br from-amber-500/10 to-transparent border border-amber-500/20 rounded-2xl p-3.5 space-y-2.5">
-      <p className="text-[10px] font-black text-amber-300/80 uppercase">🏆 Resultado da pelada de {fmtDate(game.date)}</p>
+    <Panel color="gold" cutSize={14} innerStyle={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <p className="text-[10px] font-black uppercase" style={{ color: PV6.gold }}>🏆 Resultado da pelada de {fmtDate(game.date)}</p>
       {catLine('Artilheiro', '⚽', res.artilheiros.length ? nomes(res.artilheiros) : '-', 'artilheiro')}
       {catLine('MVP', '👑', res.mvp ? nome(res.mvp) : '-', 'mvp')}
       {res.frango && catLine('Levou frango', '🐔', res.frango.length ? nomes(res.frango) : '-', 'frango')}
-    </div>
+    </Panel>
   );
 }
 
@@ -2423,48 +2635,47 @@ function BolaoTab({ games, players, myId, onSetPalpite, onOpenCard }) {
   return (
     <div className="p-4 space-y-5">
       {myId && (
-        <div className="relative flex items-center gap-3 bg-gradient-to-br from-amber-500/20 via-amber-600/10 to-transparent border border-amber-500/30 rounded-2xl p-4 overflow-hidden">
-          <div className="absolute -right-6 -top-6 w-24 h-24 rounded-full bg-amber-400/15 blur-2xl" />
-          <div className="relative w-12 h-12 rounded-full bg-amber-500/25 flex items-center justify-center shrink-0 animate-pulse" style={{ animationDuration: '2.5s' }}>
-            <DollarSign className="w-6 h-6 text-amber-300" />
+        <Panel color="gold" cutSize={16} innerStyle={{ padding: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div className="w-12 h-12 rounded-full flex items-center justify-center shrink-0" style={{ background: `${PV6.gold}22` }}>
+            <DollarSign className="w-6 h-6" style={{ color: PV6.gold }} />
           </div>
-          <div className="relative">
-            <p className="text-[10px] font-black text-amber-300/80 uppercase tracking-wide">Suas moedas</p>
-            <p className="text-3xl font-black text-amber-300 leading-none drop-shadow">{minhasMoedas}</p>
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-wide" style={{ color: PV6.gold, opacity: 0.85 }}>Suas moedas</p>
+            <p className="text-3xl font-black leading-none" style={{ color: PV6.gold }}>{minhasMoedas}</p>
           </div>
-        </div>
+        </Panel>
       )}
 
       {ultimoResolvido && <BolaoResultCard game={ultimoResolvido} players={players} />}
 
       <div>
-        <p className="text-xs font-black text-zinc-400 uppercase mb-2 flex items-center gap-1.5"><Sparkles className="w-3.5 h-3.5 text-amber-400" /> 🔥 Palpite quente da vez</p>
+        <p className="text-xs font-black text-zinc-400 uppercase mb-2 flex items-center gap-1.5"><Sparkles className="w-3.5 h-3.5" style={{ color: PV6.gold }} /> 🔥 Palpite quente da vez</p>
         {!proximo ? (
           <EmptyState icon={Sparkles} text="Sem jogo aberto pro bolão agora" sub="Assim que tiver um jogo novo, dá pra palpitar aqui" />
         ) : (
           <div className="space-y-2.5">
             <WhoAlreadyBet confirmados={confirmados} palpites={proximo.palpites} />
             {!myId ? (
-              <div className="bg-zinc-900 rounded-2xl border border-white/10 p-4 text-center">
+              <Panel color="gold" cutSize={14} innerStyle={{ padding: 16, textAlign: 'center' }}>
                 <p className="text-sm text-zinc-400">Escolha sua identidade (no cadeado 🔒) pra entrar na brincadeira!</p>
-              </div>
+              </Panel>
             ) : myPalpite ? (
-              <div className="bg-amber-500/10 border border-amber-500/25 rounded-2xl p-4">
-                <p className="text-sm font-bold text-amber-300 mb-2">🍀 Aposta feita! Suas moedas já saíram do bolso:</p>
+              <Panel color="gold" cutSize={14} innerStyle={{ padding: 16 }}>
+                <p className="text-sm font-bold mb-2" style={{ color: PV6.gold }}>🍀 Aposta feita! Suas moedas já saíram do bolso:</p>
                 <div className="text-xs text-zinc-300 space-y-1">
-                  {myPalpite.artilheiro && <p>⚽ Artilheiro: <span className="font-bold">{players.find(p => p.id === myPalpite.artilheiro)?.name}</span> <span className="text-amber-400">(-{APOSTA_CUSTO.artilheiro})</span></p>}
-                  {myPalpite.mvp && <p>👑 MVP: <span className="font-bold">{players.find(p => p.id === myPalpite.mvp)?.name}</span> <span className="text-amber-400">(-{APOSTA_CUSTO.mvp})</span></p>}
-                  {myPalpite.frango && <p>🐔 Leva frango: <span className="font-bold">{players.find(p => p.id === myPalpite.frango)?.name}</span> <span className="text-amber-400">(-{APOSTA_CUSTO.frango})</span></p>}
+                  {myPalpite.artilheiro && <p>⚽ Artilheiro: <span className="font-bold">{players.find(p => p.id === myPalpite.artilheiro)?.name}</span> <span style={{ color: PV6.gold }}>(-{APOSTA_CUSTO.artilheiro})</span></p>}
+                  {myPalpite.mvp && <p>👑 MVP: <span className="font-bold">{players.find(p => p.id === myPalpite.mvp)?.name}</span> <span style={{ color: PV6.gold }}>(-{APOSTA_CUSTO.mvp})</span></p>}
+                  {myPalpite.frango && <p>🐔 Leva frango: <span className="font-bold">{players.find(p => p.id === myPalpite.frango)?.name}</span> <span style={{ color: PV6.gold }}>(-{APOSTA_CUSTO.frango})</span></p>}
                 </div>
-              </div>
+              </Panel>
             ) : minhasMoedasRaw < APOSTA_CUSTO.frango ? (
-              <div className="bg-rose-500/10 border border-rose-500/25 rounded-2xl p-4 text-center">
-                <p className="text-sm font-bold text-rose-300">😬 Você zerou as moedas!</p>
+              <Panel color="blue" cutSize={14} innerStyle={{ padding: 16, textAlign: 'center' }}>
+                <p className="text-sm font-bold" style={{ color: '#f87171' }}>😬 Você zerou as moedas!</p>
                 <p className="text-xs text-zinc-400 mt-1">Joga a próxima pelada (ou ganha uma votação) pra recuperar e voltar a apostar.</p>
-              </div>
+              </Panel>
             ) : (
-              <div className="bg-zinc-900 rounded-2xl border border-amber-500/20 p-4 space-y-3">
-                <p className="text-[11px] text-amber-300/80 font-bold">💰 É aposta de verdade: acerta e leva o bolo de quem errou. Errou, perde a moeda.</p>
+              <Panel color="gold" cutSize={14} innerStyle={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <p className="text-[11px] font-bold" style={{ color: PV6.gold, opacity: 0.85 }}>💰 É aposta de verdade: acerta e leva o bolo de quem errou. Errou, perde a moeda.</p>
                 <BolaoCard label={`Quem vai ser o artilheiro? (${APOSTA_CUSTO.artilheiro} moedas)`} icon={Target} value={form.artilheiro} onChange={(v) => setForm(f => ({ ...f, artilheiro: v }))} options={linha} placeholder="Escolher jogador" />
                 <BolaoCard label={`Quem vai ser o MVP? (${APOSTA_CUSTO.mvp} moedas)`} icon={Crown} value={form.mvp} onChange={(v) => setForm(f => ({ ...f, mvp: v }))} options={confirmados} placeholder="Escolher jogador" />
                 {goleiros.length > 1 && (
@@ -2475,15 +2686,15 @@ function BolaoTab({ games, players, myId, onSetPalpite, onOpenCard }) {
                     Custo total: {custoSelecionado} moedas {saldoInsuficiente && ` — você só tem ${minhasMoedasRaw}`}
                   </p>
                 )}
-                <button onClick={submit} disabled={custoSelecionado === 0 || saldoInsuficiente} className="w-full bg-gradient-to-r from-amber-400 to-amber-500 text-black font-black text-sm py-3 rounded-xl transition-transform active:scale-95 shadow-lg shadow-amber-900/30 disabled:opacity-40 disabled:cursor-not-allowed">🔥 Confirmar aposta</button>
-              </div>
+                <button onClick={submit} disabled={custoSelecionado === 0 || saldoInsuficiente} className="w-full font-black text-sm py-3 transition-transform active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed" style={{ borderRadius: 5, background: `linear-gradient(135deg, ${PV6.gold}, ${PV6.goldDark})`, color: '#050608' }}>🔥 Confirmar aposta</button>
+              </Panel>
             )}
           </div>
         )}
       </div>
 
       <div>
-        <p className="text-xs font-black text-zinc-400 uppercase mb-2 flex items-center gap-1.5"><DollarSign className="w-3.5 h-3.5 text-amber-400" /> Ranking de moedas</p>
+        <p className="text-xs font-black text-zinc-400 uppercase mb-2 flex items-center gap-1.5"><DollarSign className="w-3.5 h-3.5" style={{ color: PV6.gold }} /> Ranking de moedas</p>
         {leaderboard.length === 0 ? (
           <EmptyState icon={DollarSign} text="Ninguém ganhou moedas ainda" sub="Elas aparecem aqui conforme os jogos vão acontecendo" />
         ) : (
@@ -2492,6 +2703,150 @@ function BolaoTab({ games, players, myId, onSetPalpite, onOpenCard }) {
             {resto.length > 0 && <RankingList list={resto.map((r, i) => ({ player: r.player, moedas: r.moedas }))} valueKey="moedas" unit="moedas" onOpenCard={onOpenCard} myId={myId} />}
           </>
         )}
+      </div>
+    </div>
+  );
+}
+
+function FinancasTab({ caixa, games, players, isOrganizer, onLancar, onSetPayment }) {
+  const [showLancar, setShowLancar] = useState(false);
+  const saldo = caixa.reduce((sum, e) => sum + (Number(e.valor) || 0), 0);
+  const jogoAtual = games[0] || null;
+  const confirmados = jogoAtual ? players.filter(p => jogoAtual.rsvp[p.id] === 'sim') : [];
+  const valorCombinado = jogoAtual ? Number(jogoAtual.valor) || 0 : 0;
+
+  return (
+    <div className="p-4 space-y-5">
+      <Panel color="green" cutSize={16} innerStyle={{ padding: 22, textAlign: 'center' }}>
+        <p className="text-[11px] font-black uppercase tracking-widest text-zinc-400">Caixa do grupo</p>
+        <p className="text-[40px] font-black leading-none my-1" style={{ color: PV6.green, textShadow: `0 0 20px ${PV6.greenGlow}` }}>R$ {saldo}</p>
+        <p className="text-[11px] text-zinc-500">Guardado pra bola, colete, churrasco...</p>
+      </Panel>
+
+      {isOrganizer && (
+        <button onClick={() => setShowLancar(true)} className="w-full py-3 text-[13px] font-black flex items-center justify-center gap-2 transition-transform active:scale-95" style={{ borderRadius: 5, background: `linear-gradient(135deg, ${PV6.gold}, ${PV6.goldDark})`, color: '#050608' }}>
+          <Plus className="w-4 h-4" /> Lançar movimentação
+        </button>
+      )}
+
+      <div>
+        <p className="text-xs font-black text-zinc-400 uppercase mb-2 flex items-center gap-1.5"><Wallet className="w-3.5 h-3.5" style={{ color: PV6.gold }} /> Extrato</p>
+        {caixa.length === 0 ? (
+          <EmptyState icon={Wallet} text="Nada lançado no caixa ainda" sub="A sobra de cada pelada entra aqui automático" />
+        ) : (
+          <Panel color="gold" cutSize={14} innerStyle={{ padding: 0 }}>
+            <div className="divide-y divide-white/5">
+              {caixa.map(e => (
+                <div key={e.id} className="flex items-center gap-3 px-3.5 py-2.5">
+                  <span className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: e.valor >= 0 ? `${PV6.green}22` : 'rgba(248,113,113,0.15)' }}>
+                    {e.tipo === 'auto' ? <Trophy className="w-3.5 h-3.5" style={{ color: PV6.green }} /> : e.valor >= 0 ? <ArrowUp className="w-3.5 h-3.5" style={{ color: PV6.green }} /> : <ArrowDown className="w-3.5 h-3.5" style={{ color: '#f87171' }} />}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[12.5px] font-bold text-zinc-100 truncate">{e.desc}</p>
+                    <p className="text-[10px] text-zinc-500 mt-0.5">{e.tipo === 'auto' ? 'Automático' : 'Lançado pelo organizador'}</p>
+                  </div>
+                  <span className="text-[13px] font-black shrink-0" style={{ color: e.valor >= 0 ? PV6.green : '#f87171' }}>{e.valor >= 0 ? '+' : '−'}R$ {Math.abs(e.valor)}</span>
+                </div>
+              ))}
+            </div>
+          </Panel>
+        )}
+      </div>
+
+      {jogoAtual && confirmados.length > 0 && (
+        <div>
+          <p className="text-xs font-black text-zinc-400 uppercase mb-2 flex items-center gap-1.5"><DollarSign className="w-3.5 h-3.5" style={{ color: PV6.gold }} /> Pagamentos — Pelada de {fmtDate(jogoAtual.date)}</p>
+          <Panel color="gold" cutSize={14} innerStyle={{ padding: 0 }}>
+            <div className="divide-y divide-white/5">
+              {confirmados.map(p => {
+                const pago = Number(jogoAtual.payments[p.id]) || 0;
+                const pct = valorCombinado > 0 ? Math.min(100, (pago / valorCombinado) * 100) : 0;
+                const cor = pct >= 100 ? PV6.green : pct > 0 ? PV6.gold : '#71717a';
+                return (
+                  <div key={p.id} className="flex items-center gap-3 px-3.5 py-3">
+                    <Avatar player={p} size="sm" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13px] font-bold text-zinc-100 truncate">{p.name}</p>
+                      <div className="h-1 rounded-full mt-1.5" style={{ background: 'rgba(255,255,255,0.08)' }}>
+                        <div className="h-full rounded-full" style={{ width: `${pct}%`, background: cor }} />
+                      </div>
+                    </div>
+                    {isOrganizer ? (
+                      <div className="flex items-center gap-1 shrink-0">
+                        <span className="text-[11px] text-zinc-500">R$</span>
+                        <input type="number" value={jogoAtual.payments[p.id] ?? ''} onChange={(e) => onSetPayment(jogoAtual.id, p.id, e.target.value)}
+                          className="w-14 bg-transparent text-right text-[13px] font-black outline-none" style={{ color: cor, border: '1.5px solid rgba(255,255,255,0.14)', borderRadius: 4, padding: '4px 6px' }} placeholder="0" />
+                      </div>
+                    ) : (
+                      <div className="text-right shrink-0">
+                        <p className="text-[13px] font-black" style={{ color: cor }}>R$ {pago}</p>
+                        <p className="text-[10px] text-zinc-500">de R$ {valorCombinado}</p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </Panel>
+        </div>
+      )}
+
+      {showLancar && <LancarMovimentacaoModal onClose={() => setShowLancar(false)} onConfirm={(desc, valor, tipo) => { onLancar(desc, valor, tipo); setShowLancar(false); }} />}
+    </div>
+  );
+}
+
+function LancarMovimentacaoModal({ onClose, onConfirm }) {
+  const [tipo, setTipo] = useState('saida');
+  const [desc, setDesc] = useState('');
+  const [valor, setValor] = useState('');
+  const tags = [
+    { label: 'Bola', icon: '⚽' }, { label: 'Colete', icon: '🎽' }, { label: 'Churrasco', icon: '🔥' },
+    { label: 'Material', icon: '🩹' }, { label: 'Outro', icon: '📦' },
+  ];
+  return (
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-40 p-6 animate-[fadein_0.2s_ease-out]" onClick={onClose}>
+      <div className="w-full max-w-xs" onClick={(e) => e.stopPropagation()}>
+        <Panel color="gold" cutSize={18} innerStyle={{ padding: 22 }}>
+          <p className="text-[17px] font-black text-center flex items-center justify-center gap-2"><Wallet className="w-4 h-4" style={{ color: PV6.gold }} /> Lançar movimentação</p>
+          <p className="text-[11.5px] text-zinc-500 text-center mb-4 mt-1">Registra uma entrada ou saída manual no caixa</p>
+
+          <div className="flex gap-2.5 mb-4">
+            <button onClick={() => setTipo('entrada')} className="flex-1 py-2.5 text-[12.5px] font-black flex items-center justify-center gap-1.5" style={{ borderRadius: 5, ...(tipo === 'entrada' ? { background: `${PV6.green}22`, border: `1.5px solid ${PV6.green}`, color: PV6.green } : { background: 'rgba(255,255,255,0.02)', border: '1.5px solid rgba(255,255,255,0.12)', color: '#8b93a0' }) }}>
+              <ArrowUp className="w-3.5 h-3.5" /> Entrada
+            </button>
+            <button onClick={() => setTipo('saida')} className="flex-1 py-2.5 text-[12.5px] font-black flex items-center justify-center gap-1.5" style={{ borderRadius: 5, ...(tipo === 'saida' ? { background: 'rgba(220,38,38,0.12)', border: '1.5px solid #dc2626', color: '#f87171' } : { background: 'rgba(255,255,255,0.02)', border: '1.5px solid rgba(255,255,255,0.12)', color: '#8b93a0' }) }}>
+              <ArrowDown className="w-3.5 h-3.5" /> Saída
+            </button>
+          </div>
+
+          <label className="text-[10.5px] font-bold text-zinc-500 uppercase">Descrição</label>
+          <div className="flex items-center gap-2 mt-1.5 mb-3 px-3 py-2.5" style={{ border: '1.5px solid rgba(255,255,255,0.14)', borderRadius: 4 }}>
+            <ShoppingCart className="w-4 h-4 text-zinc-500 shrink-0" />
+            <input value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="Ex: Comprou bola nova" className="flex-1 bg-transparent text-sm text-zinc-100 outline-none placeholder:text-zinc-500" />
+          </div>
+
+          <div className="flex gap-1.5 flex-wrap mb-4">
+            {tags.map(t => (
+              <button key={t.label} onClick={() => setDesc(t.label)} className="text-[10.5px] font-bold px-2.5 py-1.5 rounded-full" style={desc === t.label ? { background: `${PV6.gold}22`, border: `1px solid ${PV6.gold}`, color: PV6.gold } : { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.12)', color: '#c5c9d1' }}>
+                {t.icon} {t.label}
+              </button>
+            ))}
+          </div>
+
+          <label className="text-[10.5px] font-bold text-zinc-500 uppercase">Valor</label>
+          <div className="flex items-center gap-2 mt-1.5 mb-5 px-3 py-2.5" style={{ border: '1.5px solid rgba(255,255,255,0.14)', borderRadius: 4 }}>
+            <span className="text-sm font-bold text-zinc-400">R$</span>
+            <input type="number" value={valor} onChange={(e) => setValor(e.target.value)} placeholder="0" className="flex-1 bg-transparent text-sm font-bold text-zinc-100 outline-none" />
+          </div>
+
+          <div className="flex gap-2.5">
+            <button onClick={onClose} className="flex-1 py-3 text-[13.5px] font-black" style={{ borderRadius: 5, background: 'rgba(255,255,255,0.03)', border: '1.5px solid rgba(255,255,255,0.15)', color: '#c5c9d1' }}>Cancelar</button>
+            <button onClick={() => desc && valor && onConfirm(desc, valor, tipo)} className="flex-1 py-3 text-[13.5px] font-black flex items-center justify-center gap-1.5" style={{ borderRadius: 5, background: `linear-gradient(135deg, ${PV6.gold}, ${PV6.goldDark})`, color: '#050608' }}>
+              <Check className="w-4 h-4" /> Lançar
+            </button>
+          </div>
+        </Panel>
       </div>
     </div>
   );
